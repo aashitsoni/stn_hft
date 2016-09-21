@@ -1,0 +1,46 @@
+SDIR=src
+CC=gcc
+INC = -I../common/ -I../public/ -I../public/hft/ -I../utils/ -I. -I..
+
+CFLAGS=$(INC)
+
+VPATH =../common ../dpi ../utils
+
+SRC= minilzo.c pax_hft_mkt_data_core.c pax_hft_nse_mkt_data_hndlr.c
+
+
+ifeq ($(RLDB),Y)
+	DEBUG_FLAG = -ggdb3
+	TARGET=RLDB
+else ifeq ($(DB),Y)
+	DEBUG_FLAG = -ggdb3 -DDEBUG_SYMBOLS=1
+	TARGET=DB
+else
+	DEBUG_FLAG = -DDEBUG_SYMBOLS=0
+	TARGET=REL
+endif
+
+CFLAGS:=$(DEBUG_FLAG) $(CFLAGS) -DOS_LINUX_USER
+
+
+TARGETAPP = pax_hft_test_sample.exe
+
+ODIR=../obj
+LDIR=../libs
+
+LIBS=-lpthread -lrt -lreadline  -lncurses -L$(LDIR)
+
+OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
+
+$(ODIR)/%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGETAPP): $(OBJS)
+	@echo making $(TARGETAPP) in $(TARGET) mode..
+	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	@echo cleaning up the object files
+	rm -f $(ODIR)/*.o *~ $(IDIR)/*~ *.o *.exe

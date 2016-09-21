@@ -1,0 +1,8 @@
+
+#ifndef STN_SDK_VERSION_H
+#define STN_SDK_VERSION_H
+
+#define STN_SDK_VERSION_STRING "1.37.031"
+#define STN_SDK_VERSION_NUMBER 1_37_031
+
+#endif

@@ -1,0 +1,82 @@
+/*
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Copyright (c) 2014
+
+SwiftTrade Network LLC
+
+Author      Date				Comments
+------      -----				---------
+mt			09/08/2016			init rev
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+*/
+
+Capital Market Non NEAT Front end protocol : FIX based
+
+SenderCompId : TCMS has additional screen to configure the SenderCompId: it 
+is in the format of TraderId, MemberId, BranchId.
+
+TargetCompId : TargetCompId to connect to NSE through TAP will be NSE_TAP_CM 
+for capital market. for Futures NSE_TAP_FO for Currency Derivatives NSE_TAP_CD
+
+
+TAP port : 9651 for the capital market 
+		9652 for FO
+		   9653 for currency derivatives
+		   
+Custom tag per NSE:
+
+	554 : string : password
+	925 : string : new password
+   6000 : UTCTimestamp : Last modification time
+   6001 : UTCTimestamp : LastHostMessageTime
+   6002 : Char : BrokerStatus
+   6003 : String : BrokerName
+   6004 : String : TraderName
+   6007 : String : FillId
+   6014 : int : MaxOnBehalfOfLocationId
+   6015 : int : NoOnBehalfOfLocationId
+   6016 : int : NoTradSesStatus
+   1300 : string : MarketSegmentId
+
+For FIX :
+
+     39 : OrderStatus : U - Unchanged 
+    150 : ExecType : T - Stop Loss Triggered
+    378 : ExecRestatmentReason : 50,51,52 
+    340 : TradSesStatus : 7 - pre-open close
+   1300 : MarketSegmentID : CA, CB - call auction 1, call auction 2
+
+
+   Order of Events to be Followed during Logon:
+
+   Message (Transcode)    Direction     FIX MsgType(35=)            Remarks
+   --------------------   ------------  --------------------------  -------
+   Login Request (2300)   Inbound       A            
+
+   Logon Response(2301)   Outbound      A    - sent on successful logon
+
+   Logon Response         Outbound      5    - in case of unsuccessful logon
+
+   Tradding Session       Inbound       g    - FIX client should send
+    Request (1600) with 
+    Embedded Journal
+    download(7000) from
+    each Host locaitonId
+
+   MultipleMessages       Outbound      8
+     Order Entry,modifcation
+     cancel
+
+   TradingSession Status  Outbound      h
+     Response(1601) 
+
+   Logoff                 Outbound      5
+
+   --- order transaction will be allowed from this point onwards ----
+
+
+   
+
+    
+   
