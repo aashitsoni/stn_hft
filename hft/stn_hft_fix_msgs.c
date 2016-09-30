@@ -13,6 +13,7 @@
 #include "stn_sdk_version.h"
 #include <time.h>
 #include "stn_hft_fix_msgs.h"
+#include "stn_hft_fix_order_db.h"
 #include "Stn_errno.h"
 
 //- - - - - - - - - - - - 
@@ -357,10 +358,16 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
         }
 
 
-    return stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
+    if(  STN_ERRNO_SUCCESS == stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
                                             ORDER_NEW_MSG_TYPE,
                                             &oe_msg[FIX_MSG_OFFSET],
-                                            msg_len, time_str);
+                                            msg_len, time_str))
+    	{
+		 if (STN_ERRNO_SUCCESS == stn_hft_FIX_add_new_order_into_db(pax_hft_FIX_op_channel_handle,p_FIX_op_new_order_crumbs))
+		 	{
+		 	
+		 	}
+    	}
 
         
 }
