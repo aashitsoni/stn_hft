@@ -150,19 +150,13 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
                                      uint32_t session_seq_nmbr_seed,
                                      void** pax_hft_FIX_op_channel_handle);
 int stn_hft_FIX_op_channel_start    (void* pax_hft_FIX_op_channel_handle);
-
 int stn_hft_FIX_op_channel_login    (void* pax_hft_FIX_op_channel_handle);
-
 int stn_hft_FIX_op_channel_send_order_new       (void* pax_hft_FIX_op_channel_handle, struct FIX_OE_variables_s *p_FIX_op_order_new_crumbs);
 int stn_hft_FIX_op_channel_send_order_replace   (void* pax_hft_FIX_op_channel_handle, struct FIX_OR_variables_s *p_FIX_op_order_replace_crumbs);
 int stn_hft_FIX_op_channel_send_order_cancel    (void* pax_hft_FIX_op_channel_handle, struct FIX_OC_variables_s *p_FIX_op_order_cancel_crumbs);
-
 int stn_hft_FIX_op_channel_get_next_msg(void* pax_hft_FIX_op_channel_handle,unsigned char** msg, unsigned int *msg_len);
-
 int stn_hft_FIX_op_channel_delete   (void* pax_hft_FIX_op_channel_handle);
-
 int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle, unsigned char msg_type,unsigned char* msg_buf,int sz_msg_buf, char* time_str);
-
 int stn_hft_FIX_op_channel_send_hb(void* stn_hft_FIX_op_channel_handle);
 
 #endif

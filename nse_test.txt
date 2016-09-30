@@ -11,6 +11,10 @@ mt			09/08/2016			init rev
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 */
 
+*yum install numactl-devel* for development purpose
+*yum install numactl* for deployment purpose.
+
+
 Capital Market Non NEAT Front end protocol : FIX based
 
 SenderCompId : TCMS has additional screen to configure the SenderCompId: it 

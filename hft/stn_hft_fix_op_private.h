@@ -36,6 +36,7 @@
 
 #define FIX_MSG_HDR_LEN (TAG_8_LEN + TAG_9_LEN + TAG_35_LEN + TAG_52_LEN)
 
+#define LOG_FILE_NAME "stn_fix_outgoing_stats_%d_%d_%d.log"
 
 struct _stn_hft_FIX_op_channel_handle_private_s {
 
@@ -97,6 +98,11 @@ int __stn_hft_FIX_clone_chnl_get_next_msg (struct _stn_hft_FIX_op_channel_handle
 int stn_hft_FIX_op_channel_send_order_cancel_without_orderid (void* pax_hft_FIX_op_channel_handle, struct FIX_OC_variables_s *p_FIX_op_order_cancel_crumbs);
 int stn_hft_FIX_op_channel_send_order_replace_without_orderid (void* pax_hft_FIX_op_channel_handle, struct FIX_OR_variables_s *p_FIX_op_order_replace_crumbs);
 
+#define WRITE_LOG(hdl,time,log_string,delta)\
+{\
+if(hdl->fp_stats_log && hdl->FIX_op_channel_public_attribs.log_stats_flag)\
+    fprintf(hdl->fp_stats_log,"%s(%llu): %s\n",time,delta,log_string);\
+}
 
 
 #endif
