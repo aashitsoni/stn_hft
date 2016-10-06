@@ -77,6 +77,7 @@ struct _stn_hft_FIX_op_channel_handle_private_s {
 	long log_interval; // in secs..
 	int file_header_logged; // indicates if the CSV file header has been logged
 	unsigned long time_outs;
+	int8_t	logged_in; 
 
 	pthread_t	fix_pair_strategy_master_thr_hdl;
 

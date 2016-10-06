@@ -11,7 +11,15 @@ CFLAGS=$(INC)
 
 VPATH = ./common ./hft ./utils ./tools/ ./public/hft \
 
-SRC= stn_hft_mkt_data_core.c stn_hft_fix_op_core.c stn_numa_impl.c  stn_hft_pair_strategy_core.c
+SRC= stn_hft_mkt_data_core.c\
+	 stn_hft_fix_op_core.c\
+	 stn_numa_impl.c\
+	 stn_hft_pair_strategy_core.c\
+	 stn_hft_fix_msgs.c\
+	 stn_hft_fix_order_db.c
+	 
+	
+
 
 ifeq ($(RLDB),Y)
 	DEBUG_FLAG = -ggdb3
@@ -30,7 +38,7 @@ CFLAGS:=$(DEBUG_FLAG) $(CFLAGS)
 ifeq ($(PAX),Y)
 	TARGETAPP = libpaxhft.a
 else 
-	TARGETAPP = libstnhft.a	
+	TARGETAPP = libstnhft.so	
 endif
 
 ODIR=obj
@@ -42,7 +50,7 @@ LIBS=-lpthread -lrt -lnuma
 OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
 
 $(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -fpic -o $@ $< $(CFLAGS)
 
 $(TARGETAPP): $(OBJS)
 	@echo making $(TARGETAPP) in $(TARGET) mode..

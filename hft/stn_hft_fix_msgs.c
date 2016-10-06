@@ -211,6 +211,40 @@ int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle,unsigned
 }
 
 
+int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
+{
+	int iMsg = 0,msg_len = 0;
+	uint8_t* msg;
+	struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
+	
+	while(1)
+		{
+		while((iMsg = stn_hft_FIX_op_channel_get_next_msg(pax_hft_FIX_op_channel_handle,&msg,&msg_len)) == STN_ERRNO_NODATARECV);
+		
+		if( STN_ERRNO_SUCCESS == iMsg)
+		{
+			printf("\nstn_hft_fix_msgs.c: Recieved Message :%d %s\n",msg_len, msg);
+			if(strstr(msg, "96=0"))
+			{
+				FIX_op_hdl_private->logged_in=1; // success
+				printf("\nstn_hft_fix_msgc.c: Logged in successfully\n");
+			}
+		}
+		else if(STN_ERRNO_FAIL == iMsg)
+		{
+			FIX_op_hdl_private->logged_in = -1; // failure
+			printf("\nstn_hft_fix_msgs.c: Closure of channel");
+			break;
+		}
+		sleep(1);
+			
+		}
+	return iMsg;
+	
+}
+
+// wait for the login repsonse to check if the terminal checked in fine.
+
 
 //- - - - - - - - - - - - - 
 /*
@@ -225,6 +259,8 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 {
      uint8_t login_msg [FIX_MSG_SIZE] = {0};
      uint16_t msg_len = 0;
+	 int ret ;
+	 
 
 
      struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
@@ -233,7 +269,7 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 	if(FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length >0)
 		{
      msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-                           FIX_4_2_Login_Template, 
+                         FIX_4_2_Login_Template, 
                          0x01,
                          FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length,0x01,
                          FIX_op_hdl_private->session_constants.tag_91_encrpted_digest,0x01,
@@ -248,7 +284,7 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 	else
 		{
 		msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-							   FIX_4_2_Login_Template_without_Tag90, 
+							 FIX_4_2_Login_Template_without_Tag90, 
 							 0x01,
 							 FIX_op_hdl_private->session_constants.tag_95_raw_data_length,0x01,
 							 FIX_op_hdl_private->session_constants.tag_96_raw_data,0x01,
@@ -269,10 +305,17 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
     return send(FIX_op_hdl_private->sd, login_msg, msg_length, 0 );
 
     */
-    return stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
+ 	ret = stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
                                             LOGIN_MSG_TYPE,
                                             &login_msg[FIX_MSG_OFFSET],
                                             msg_len, 0);
+
+	// check for the response from the login
+	if(ret == STN_ERRNO_SUCCESS)
+		ret = __stn_hft_FIX_check_login_response(pax_hft_FIX_op_channel_handle);
+
+	return ret;
+	
 
     
 }
@@ -324,8 +367,8 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
         {
 
         msg_len = snprintf (&oe_msg[FIX_MSG_OFFSET],
-                            FIX_BUFF_SIZE,
-                            FIX_4_2_Order_Entry_Template,
+                         FIX_BUFF_SIZE,
+                         FIX_4_2_Order_Entry_Template,
                          p_FIX_op_new_order_crumbs->tag_21_floor_broker_instr,0x01,
                          p_FIX_op_new_order_crumbs->tag_11_client_order_id, 0x01,
                          p_FIX_op_new_order_crumbs->tag_38_order_qty, 0x01,
@@ -341,9 +384,9 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
     else
         {
         msg_len = snprintf (&oe_msg[FIX_MSG_OFFSET],
-                            FIX_BUFF_SIZE,
-                            FIX_4_2_Order_Entry_Template_with_Account,
-                            p_FIX_op_new_order_crumbs->tag_1_account,0x01,
+                         FIX_BUFF_SIZE,
+                         FIX_4_2_Order_Entry_Template_with_Account,
+                         p_FIX_op_new_order_crumbs->tag_1_account,0x01,
                          p_FIX_op_new_order_crumbs->tag_21_floor_broker_instr,0x01,
                          p_FIX_op_new_order_crumbs->tag_11_client_order_id, 0x01,
                          p_FIX_op_new_order_crumbs->tag_38_order_qty, 0x01,

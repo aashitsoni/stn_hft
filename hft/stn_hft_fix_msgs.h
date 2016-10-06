@@ -36,7 +36,7 @@
 										"96=%s%c"	  // 13641,13640 |	-- Raw Data
 										"98=0%c"	  //| -- Encryption Method
 										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
-										"141=N%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
+										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c";  // 554 password encoding in clear text
 	
 	static uint8_t *FIX_4_2_Login_Template_without_Tag90 = 
@@ -45,7 +45,7 @@
 										"96=%s%c"	  // 13641,13640 |	-- Raw Data
 										"98=0%c"	  //| -- Encryption Method
 										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
-										"141=N%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
+										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c";  // 554 password encoding in clear text
 	
 	

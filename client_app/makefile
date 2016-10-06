@@ -7,7 +7,7 @@ CFLAGS=$(INC)
 VPATH =../common ../hft ../tools ../public/hft
 
 SRC= stn_getopt.c \
-     main.hft.c
+     fix_server_test.c
 
 ifeq ($(RLDB),Y)
 	DEBUG_FLAG = -ggdb3
@@ -22,19 +22,20 @@ endif
 
 CFLAGS:=$(DEBUG_FLAG) $(CFLAGS)
 
+ODIR=../obj
+LDIR=../libs
+
 #-msse4.2 -xSSE4.2
 
 ifeq ($(PAX),Y)
 	TARGETAPP = pax_hft_sample.exe
 	LIBS=-lpthread -lrt -lnuma -L$(LDIR) -lpaxhft
 else 
-	TARGETAPP = stn_hft_sample.exe
-	LIBS=-lpthread -lrt -lnuma -lstnhft -L$(LDIR) 
+	TARGETAPP = fix_test_server.exe
+	LIBS=-L$(LDIR) -lpthread -lrt -lnuma -lstnhft 
 endif
 
 
-ODIR=../obj
-LDIR=../libs
 
 #LD=icc
 
@@ -53,3 +54,4 @@ $(TARGETAPP): $(OBJS)
 clean:
 	@echo cleaning up the object files
 	rm -f $(ODIR)/*.o *~ $(IDIR)/*~ *.o *.exe
+

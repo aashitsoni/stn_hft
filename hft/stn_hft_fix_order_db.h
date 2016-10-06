@@ -29,7 +29,8 @@ typedef struct _STN_HFT_FIX_ORDER_HASH_S
 }STN_HFT_FIX_ORDER_HASH_T,*STN_HFT_FIX_ORDER_HASH_P;
 
 
-int stn_hft_FIX_add_new_order_into_db();
+int stn_hft_FIX_add_new_order_into_db(struct _stn_hft_FIX_op_channel_handle_private_s* pax_hft_FIX_op_channel_handle,
+														struct FIX_OE_variables_s *p_FIX_op_new_order_crumbs);
 
 
 
