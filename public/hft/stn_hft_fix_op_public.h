@@ -30,12 +30,13 @@ struct FIX_session_constants_s {
     uint8_t tag_554_password[16];	// NSE custom tag - 554 for passing password
     // OP related session crumbs
     uint8_t tag_49_sender_comp_id[64];
-    uint8_t tag_50_sender_comp_sub_id[64];  // check w/ Sunith@iRage..
+    uint8_t tag_50_sender_comp_sub_id[64];  // check w/ ..
     uint8_t tag_56_target_comp_id[64];
     uint8_t tag_57_target_comp_sub_id[64];
     uint8_t mcx_tag_9227_terminal_info[64];
     uint16_t tag_204_cust_or_firm;
-    uint32_t tag_59_time_in_force;          // check w/ Sunith@iRage..
+    uint32_t tag_59_time_in_force;          // check w/ ..
+	uint8_t tag_925_newpassword[16];
 };
 
 

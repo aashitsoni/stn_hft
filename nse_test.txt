@@ -84,3 +84,23 @@ For FIX :
 
     
    
+------------------------------------------------------------------------------
+workflow
+------------------------------------------------------------------------------
+
+login -> and wait for the succesfull logon messages
+if login fails. - display user the message and dump the response to a log file
+
+once login complete :
+
+bring the console menu to perform any order transaction.
+
+
+Order Entry Options :
+
+	1. New Order
+	2. Replace Order
+	3. Cancel Order
+	4. Connection Status
+	5. Settings
+	6. Logout

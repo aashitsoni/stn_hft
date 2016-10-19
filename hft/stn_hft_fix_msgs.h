@@ -48,6 +48,27 @@
 										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c";  // 554 password encoding in clear text
 	
+	static uint8_t *FIX_4_2_Login_Template_change_password = 
+										"57=ADMIN%c"  // -- TargetSubID.  "ADMIN" reserved for administrative messages not intended for a specific user | 
+										"90=%u%c"	  // | -- Encrptd Stream Length
+										"91=%s%c"	  // 02B4E55C82083A3114A084D6BF984DF69DF845D19484761B |  -- Actual Encrypted Stream
+										"95=%u%c"	  //11 – RawDataLength| 
+										"96=%s%c"	  // 13641,13640 |	-- Raw Data
+										"98=0%c"	  //| -- Encryption Method
+										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
+										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
+										"554=%s%c"  // 554 password encoding in clear text
+										"925=%s%c"; // 925 - new password in clear text
+	
+	static uint8_t *FIX_4_2_Login_Template_without_Tag90_change_password = 
+										"57=ADMIN%c"  // -- TargetSubID.  "ADMIN" reserved for administrative messages not intended for a specific user | 
+										"95=%u%c"	  //11 – RawDataLength| 
+										"96=%s%c"	  // 13641,13640 |	-- Raw Data
+										"98=0%c"	  //| -- Encryption Method
+										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
+										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
+										"554=%s%c"  // 554 password encoding in clear text
+										"925=%s%c"; // 925 - new password in clear text
 	
 	static uint8_t *FIX_4_2_Order_Entry_Template = 
 										"21=%c%c"		// Instructions for order handling on Broker trading floor 

@@ -245,6 +245,73 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 
 // wait for the login repsonse to check if the terminal checked in fine.
 
+//- - - - - - - - - - - - - This is done only at the reset of the password.
+/*
+	prototype : stn_hft_FIX_op_channel_login_with_change_password
+	Description : FIX login function : it is an API that is used to log into the FIX exchange server. Mainly it 
+			  sends FIX logon messages to the remote server and sends new password as it is provided by the server.
+			  
+	input : pax_hft_FIX_op_channel_handle
+	output : int : message length it has sent.
+*/
+
+int stn_hft_FIX_op_channel_login_with_change_password(void* pax_hft_FIX_op_channel_handle)
+{
+     uint8_t login_msg [FIX_MSG_SIZE] = {0};
+     uint16_t msg_len = 0;
+	 int ret ;
+	 uint8_t new_password_len = 0;
+	 
+
+
+     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
+     FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length= strlen(FIX_op_hdl_private->session_constants.tag_91_encrpted_digest);
+	 
+	if(FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length >0)
+		{
+     msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+                         FIX_4_2_Login_Template_change_password, 
+                         0x01,
+                         FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length,0x01,
+                         FIX_op_hdl_private->session_constants.tag_91_encrpted_digest,0x01,
+                         FIX_op_hdl_private->session_constants.tag_95_raw_data_length,0x01,
+                         FIX_op_hdl_private->session_constants.tag_96_raw_data,0x01,
+                         0x01,
+                         0x01,
+                         0x01,
+                         FIX_op_hdl_private->session_constants.tag_554_password,0x01,
+						 FIX_op_hdl_private->session_constants.tag_925_newpassword,0x01
+                 );
+		}
+	else
+		{
+		msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+							 FIX_4_2_Login_Template_without_Tag90_change_password, 
+							 0x01,
+							 FIX_op_hdl_private->session_constants.tag_95_raw_data_length,0x01,
+							 FIX_op_hdl_private->session_constants.tag_96_raw_data,0x01,
+							 0x01,
+							 0x01,
+							 0x01,
+							 FIX_op_hdl_private->session_constants.tag_554_password,0x01,
+	    					 FIX_op_hdl_private->session_constants.tag_925_newpassword,0x01
+							 
+					 );
+		}
+		
+ 	ret = stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
+                                            LOGIN_MSG_TYPE,
+                                            &login_msg[FIX_MSG_OFFSET],
+                                            msg_len, 0);
+
+	// check for the response from the login
+	if(ret == STN_ERRNO_SUCCESS)
+		ret = __stn_hft_FIX_check_login_response(pax_hft_FIX_op_channel_handle);
+
+	return ret;
+
+
+}
 
 //- - - - - - - - - - - - - 
 /*
@@ -260,12 +327,20 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
      uint8_t login_msg [FIX_MSG_SIZE] = {0};
      uint16_t msg_len = 0;
 	 int ret ;
+	 uint8_t new_password_len = 0;
 	 
 
 
      struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
      FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length= strlen(FIX_op_hdl_private->session_constants.tag_91_encrpted_digest);
-     
+	 new_password_len = strlen(FIX_op_hdl_private->session_constants.tag_925_newpassword);
+	 
+	 if(new_password_len > 0)
+	 {
+	 printf("changing password at the login...\n");
+	 return stn_hft_FIX_op_channel_login_with_change_password(pax_hft_FIX_op_channel_handle);
+	 }
+	 
 	if(FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length >0)
 		{
      msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
@@ -294,17 +369,7 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 							 FIX_op_hdl_private->session_constants.tag_554_password,0x01
 					 );
 		}
-
-/*    msg_length = stn_hft_FIX_op_channel_format_msg(login_msg,
-                                    msg_length,
-                                    sizeof(login_msg),
-                                    FIX_op_hdl_private->formattedMsg);
-
-
-    WRITE_LOG(FIX_op_hdl_private,time_str,login_msg,0);
-    return send(FIX_op_hdl_private->sd, login_msg, msg_length, 0 );
-
-    */
+		
  	ret = stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
                                             LOGIN_MSG_TYPE,
                                             &login_msg[FIX_MSG_OFFSET],

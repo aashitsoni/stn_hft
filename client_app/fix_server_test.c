@@ -100,7 +100,8 @@ typedef struct hft_config_s
 	char g_fix_tag_9227[64];
 	char g_instrument_A[64];
 	char g_instrument_B[64];
-	char g_fix_tag_554[64];
+	char g_fix_tag_554[64]; // old password
+	char g_fix_tag_925[64]; // new passowrd
 }HFT_CONFIG_T,*HFT_CONFIG_P;
 
 HFT_CONFIG_T g_hft_config;
@@ -165,8 +166,10 @@ int hft_read_config_file()
 			pszText = g_hft_config.g_instrument_A;
 		else if (strncmp(txt,"instrument_B",12) == 0)
 			pszText = g_hft_config.g_instrument_B;
-		else if (strncmp(txt,"fix_tag_554",11) == 0)
+		else if (strncmp(txt,"password",11) == 0)
 			pszText = g_hft_config.g_fix_tag_554;
+		else if (strncmp(txt,"new_password",12) == 0)
+			pszText = g_hft_config.g_fix_tag_925;
 		else 
 			pszText = NULL;
 		
@@ -180,6 +183,37 @@ int hft_read_config_file()
 		
 		}
 	
+}
+
+
+int hft_print_config_info()
+{
+
+
+	printf("\nconfiguration details..\n");
+	printf("name:     %s\n",g_hft_config.g_name);
+	printf("support:  %s\n",g_hft_config.g_support);
+	printf("engine:   %s\n",g_hft_config.g_engine);
+	printf("version:  %s\n",g_hft_config.g_version);
+	printf("client:   %s\n",g_hft_config.g_client);
+	printf("
+	char g_client[64];
+	char g_interface[64];
+	char g_multicast_ip[64];
+	char g_multicast_port[64];
+	char g_fix_gw[64];
+	char g_fix_port[64];
+	char g_fix_tag_91[64];
+	char g_fix_tag_96[64];
+	char g_fix_tag_49[64];
+	char g_fix_tag_56[64];
+	char g_fix_tag_57[64];
+	char g_fix_tag_9227[64];
+	char g_instrument_A[64];
+	char g_instrument_B[64];
+	char g_fix_tag_554[64]; // old password
+	char g_fix_tag_925[64]; // new passowrd
+
 }
 
 
@@ -565,10 +599,10 @@ int hft_mcx_fix_op_test(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uint16
 	struct FIX_session_constants_s FIX_session_constants = 
 	{
 		.tag_98_encrpt_methd = 0,			
-		.tag_141_Reset_seq_num = 'N',
+		.tag_141_Reset_seq_num = 'Y',
 		.tag_204_cust_or_firm = 1,
 		.tag_59_time_in_force = 0,			
-		.tag_34_msg_seq_num=15,
+		.tag_34_msg_seq_num=1,
 	};
 	
 	strcpy(FIX_session_constants.tag_8_FIXString, "FIX.4.2");
@@ -591,6 +625,8 @@ int hft_mcx_fix_op_test(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uint16
 	strcpy(FIX_session_constants.tag_57_target_comp_sub_id , g_hft_config.g_fix_tag_57);
 	strcpy(FIX_session_constants.mcx_tag_9227_terminal_info, g_hft_config.g_fix_tag_9227);
 	strcpy(FIX_session_constants.tag_554_password,g_hft_config.g_fix_tag_554);
+	strcpy(FIX_session_constants.tag_925_newpassword,g_hft_config.g_fix_tag_925);
+	
 	
 
 	// SETUP the attribs for this channel
