@@ -8,6 +8,8 @@ INC = -I./common/ -I./public/ \
 
 
 CFLAGS=$(INC)
+LIBFLAGS = -shared -Wl, -,-soname,
+
 
 VPATH = ./common ./hft ./utils ./tools/ ./public/hft \
 
@@ -38,7 +40,8 @@ CFLAGS:=$(DEBUG_FLAG) $(CFLAGS)
 ifeq ($(PAX),Y)
 	TARGETAPP = libpaxhft.a
 else 
-	TARGETAPP = libstnhft.so	
+	TARGETAPP = libstnhft.so.1	
+	TARGETAPP_FULL = libstnhft.so.1.0.1
 endif
 
 ODIR=obj
@@ -50,13 +53,14 @@ LIBS=-lpthread -lrt -lnuma
 OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
 
 $(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -fpic -o $@ $< $(CFLAGS)
+	$(CC) -c -fpic -g -Wall -o $@ $< $(CFLAGS)
 
 $(TARGETAPP): $(OBJS)
 	@echo making $(TARGETAPP) in $(TARGET) mode..
-	ar -cvq $(LDIR)/$(TARGETAPP) $(ODIR)/*.o
+#	$(CC) $(LIBFLAGS) -o$(LDIR)/$(TARGETAPP) $(ODIR)/*.o
+	gcc -shared -Wl,-soname,$(LDIR)/libstnhft.so.1 -o $(LDIR)/libstnhft.so $(ODIR)/*.o
 	
 
 clean:
 	@echo cleaning up the object files
-	rm -f $(ODIR)/*.o *~ $(LDIR)/*.a $(IDIR)/*~ *.o
+	rm -f $(ODIR)/*.o *~ $(LDIR)/so.1* $(IDIR)/*~ *.o

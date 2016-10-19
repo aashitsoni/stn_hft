@@ -24,7 +24,6 @@ mt			10/05/2016			init rev
 #include <fcntl.h>
 
 
-
 #include "stn_errno.h"
 #include "stn_hft_fix_op_public.h"
 #include "stn_hft_mkt_data_public.h"
@@ -166,7 +165,7 @@ int hft_read_config_file()
 			pszText = g_hft_config.g_instrument_A;
 		else if (strncmp(txt,"instrument_B",12) == 0)
 			pszText = g_hft_config.g_instrument_B;
-		else if (strncmp(txt,"password",11) == 0)
+		else if (strncmp(txt,"password",8) == 0)
 			pszText = g_hft_config.g_fix_tag_554;
 		else if (strncmp(txt,"new_password",12) == 0)
 			pszText = g_hft_config.g_fix_tag_925;
@@ -186,9 +185,10 @@ int hft_read_config_file()
 }
 
 
-int hft_print_config_info()
+int hft_print_config_info_ask_answer()
 {
-
+	char ch[10],ch1[10];
+	int ans = 0;
 
 	printf("\nconfiguration details..\n");
 	printf("name:     %s\n",g_hft_config.g_name);
@@ -196,23 +196,52 @@ int hft_print_config_info()
 	printf("engine:   %s\n",g_hft_config.g_engine);
 	printf("version:  %s\n",g_hft_config.g_version);
 	printf("client:   %s\n",g_hft_config.g_client);
-	printf("
-	char g_client[64];
-	char g_interface[64];
-	char g_multicast_ip[64];
-	char g_multicast_port[64];
-	char g_fix_gw[64];
-	char g_fix_port[64];
-	char g_fix_tag_91[64];
-	char g_fix_tag_96[64];
-	char g_fix_tag_49[64];
-	char g_fix_tag_56[64];
-	char g_fix_tag_57[64];
-	char g_fix_tag_9227[64];
-	char g_instrument_A[64];
-	char g_instrument_B[64];
-	char g_fix_tag_554[64]; // old password
-	char g_fix_tag_925[64]; // new passowrd
+	printf("interface: %s\n",g_hft_config.g_interface);
+	if(strlen(g_hft_config.g_multicast_ip)>0)
+	{
+		printf("multicast ip:   %s\n",g_hft_config.g_multicast_ip);
+		printf("multicast port: %s\n",g_hft_config.g_multicast_port);
+	}
+	
+	if(strlen(g_hft_config.g_fix_gw)> 0)
+	{
+		printf("fix gateway:    %s\n",g_hft_config.g_fix_gw);
+		printf("fix port:       %s\n\n",g_hft_config.g_fix_port);
+		printf("fix_tag_91:      %s\n",g_hft_config.g_fix_tag_91);
+		printf("fix_tag_96:      %s\n",g_hft_config.g_fix_tag_96);
+		printf("fix_tag_49:      %s\n",g_hft_config.g_fix_tag_49);
+		printf("fix_tag_56:      %s\n",g_hft_config.g_fix_tag_56);
+		printf("fix_tag_57:      %s\n",g_hft_config.g_fix_tag_57);
+		printf("fix_tag_9227:    %s\n",g_hft_config.g_fix_tag_9227);
+		printf("instrument_A:    %s\n",g_hft_config.g_instrument_A);
+		printf("instrument_B:    %s\n",g_hft_config.g_instrument_B);
+		
+		printf("password:        %s\n",g_hft_config.g_fix_tag_554);
+		printf("new password:    %s\n",g_hft_config.g_fix_tag_925);
+	}
+	
+	printf("Do you want to continue test?(Y/N)");
+	fflush(stdin);
+	scanf("%s",ch);
+	
+	if(ch[0] == 'y' || ch[0] == 'Y')
+	{
+		if(strlen(g_hft_config.g_fix_tag_925)>0)
+		{
+			printf("\nThe configuration has new password, this will send login request with new password for password change\n");
+			printf("Do you want to send change password login request as well..?(Y/N)");
+			fflush(stdin);
+			scanf("%s",ch1);
+			if(ch1[0] == 'Y' || ch1[0] == 'y')
+			{
+				ans = 1;
+			}
+		}
+		else
+			ans = 1;
+	}
+	
+	return ans;
 
 }
 
@@ -329,25 +358,7 @@ int hft_mcx_fix_channel_process_login(void* chnl_hdl)
 		while((iMsg= stn_hft_FIX_op_channel_get_next_msg(chnl_hdl,&msg,&msg_len)) == STN_ERRNO_NODATARECV);
 		if( STN_ERRNO_SUCCESS == iMsg)
 		{
-			printf("\nmain.hft Recieved Message :%d %s\n",msg_len, msg);
-			//if(strstr(msg, "96=-1"))
-			if(strstr(msg, "35=A")) // successful logon response
-			{
-				loggedIn=1;
-				printf("successfully logged in..\n");
-				break;
-			}
-			if(strstr(msg,"35=5")) // unsucessful logon message
-				{
-				loggedIn=-1;
-				printf("login request recieved unsuccessful response\n");
-				break;
-				}
-			else
-				{
-				printf("login request failed..\n");
-				loggedIn = 1;
-				}
+			loggedIn = 1;
 		}
 		else if(STN_ERRNO_FAIL == iMsg)
 		{
@@ -657,15 +668,15 @@ int hft_mcx_fix_op_test(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uint16
 			if(!loggedIn)
 				break;
 
-
-			hft_mcx_fix_wait_for_dnld_msg(chnl_hdl);
+//			hft_mcx_fix_wait_for_dnld_msg(chnl_hdl);
 
 			// start the heartbeat thread
 			pthread_create(&hb_thread,
 							NULL,
 							hft_mcx_fix_heartbeat_thread,
 							chnl_hdl);
-
+							
+/*							
 			// just wait for the message to download
 			while((iMsg= stn_hft_FIX_op_channel_get_next_msg(chnl_hdl,&msg,&msg_len)) == STN_ERRNO_FAIL)
 				{
@@ -682,7 +693,7 @@ int hft_mcx_fix_op_test(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uint16
 			iMsg= stn_hft_FIX_op_channel_get_next_msg(chnl_hdl,&msg,&msg_len);
 
 			// delete the channel and come out.
-			
+*/			
 			// send order new:
 			// wait for the ack on the order new
 			sleep(5);
@@ -754,11 +765,25 @@ int main (int argc, char** argv)
 	uint8_t exchg_mcast_ip [16] = {0}, hw_iface_ip[16] = {0}, exchg_FIX_gway_ip[16] = {0};;
 	uint16_t exchg_fix_port = 0;
 	uint16_t exchg_mcast_port = 0;
+	int ans = 0;
 
 
 	hft_read_config_file();
 	
-		// gcc getopt(...) has bugs on certain ops.. so use the hand rolled from stn_ api's
+	ans = hft_print_config_info_ask_answer();
+	
+	if(ans != 1)
+		return 0;
+	
+	printf("\nDo you want to provide initial sequence number?(default 1)");
+	scanf("%d",&seqNum);
+
+
+	printf("\nInitial sequence Number:%d",seqNum);
+	
+	
+	
+/*
 	while ((c = stn_getopt (argc, argv, "s:")) != -1)
 	{
 		switch (c)
@@ -770,6 +795,7 @@ int main (int argc, char** argv)
 				break;
 		}
 	}
+*/
 
 	signal(SIGINT,sig_handler);
 	

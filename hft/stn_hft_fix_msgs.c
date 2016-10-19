@@ -219,15 +219,17 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 	
 	while(1)
 		{
+		printf("\n%s:%d:Checking login response",__FILE__,__LINE__);
 		while((iMsg = stn_hft_FIX_op_channel_get_next_msg(pax_hft_FIX_op_channel_handle,&msg,&msg_len)) == STN_ERRNO_NODATARECV);
 		
 		if( STN_ERRNO_SUCCESS == iMsg)
 		{
 			printf("\nstn_hft_fix_msgs.c: Recieved Message :%d %s\n",msg_len, msg);
-			if(strstr(msg, "96=0"))
+			if(strstr(msg, "35=A"))
 			{
 				FIX_op_hdl_private->logged_in=1; // success
 				printf("\nstn_hft_fix_msgc.c: Logged in successfully\n");
+				return iMsg;
 			}
 		}
 		else if(STN_ERRNO_FAIL == iMsg)

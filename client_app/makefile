@@ -32,7 +32,7 @@ ifeq ($(PAX),Y)
 	LIBS=-lpthread -lrt -lnuma -L$(LDIR) -lpaxhft
 else 
 	TARGETAPP = fix_test_server.exe
-	LIBS=-L$(LDIR) -lpthread -lrt -lnuma -lstnhft 
+	LIBS=-L$(LDIR) -lstnhft -lpthread -lrt -lnuma 
 endif
 
 
