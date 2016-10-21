@@ -10,3 +10,6 @@ GPATH
 GRTAGS
 GTAGS
 
+*.exe
+tests/fix.echosvr/fix.echosvr
+*.o
