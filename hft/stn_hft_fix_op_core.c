@@ -14,6 +14,8 @@
 #include "stn_numa_impl.h"
 #include "stn_sdk_version.h"
 #include <time.h>
+#include "console_log.h"
+
 
 
 
@@ -60,7 +62,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
     time_t curr_time;
     struct tm* local_time;
     
-    printf("PAX HFT SDK version: %s\n", STN_SDK_VERSION_STRING);
+    console_log_write("%s:%d STN HFT SDK version: %s\n", __FILE__,__LINE__, STN_SDK_VERSION_STRING);
     fflush(stdout);
 
     FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s*)calloc(1,sizeof(struct _stn_hft_FIX_op_channel_handle_private_s));
@@ -88,7 +90,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
         return STN_ERRNO_FAIL;
     }
     else
-        printf("FIX g'way socket....OK.\n");
+        console_log_write("%s:%d FIX g'way socket....OK.\n",__FILE__,__LINE__);
 
     /* - - - - 
        Look at this link: http://codingrelic.geekhold.com/2009/10/code-snippet-sobindtodevice.html
@@ -111,7 +113,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
         return STN_ERRNO_FAIL;
         }
     
-    printf("FIX g'way socket binding ....OK.\n");
+    console_log_write("%s:%d FIX g'way socket binding ....OK.\n",__FILE__,__LINE__);
     fflush(stdout);
     /* 
      Enable tcp_low_latency
@@ -131,16 +133,16 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
         return STN_ERRNO_FAIL;
     }
 
-    printf("FIX g'way socket g'way connect....OK.\n");
+    console_log_write("%s:%d FIX g'way socket g'way connect....OK.\n",__FILE__,__LINE__);
     fflush(stdout);
 
     if(setsockopt( FIX_op_hdl_private->sd, IPPROTO_TCP,TCP_NODELAY,&option,sizeof(option))<0)
         {
         perror("\nSO_NODELAY could not be set");
         }
-    printf("FIX g'way h'ware sockopt....OK.\n");
+    console_log_write("%s:%d FIX g'way h'ware sockopt....OK.\n",__FILE__,__LINE__);
     fflush(stdout);
-    /*DO:
+    /*DO: 
         0. Identify the CPU node for the incoming CPU id.
         1. Allocate a 128 MB queue buffer from the HUGE PAGE for that CPU NODE 
         Each index location will be of size = struct __hft_channel_rng_buf_entry_s. i.e. about 1528 bytes..
@@ -149,18 +151,18 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
     node_id = __stn_hft_get_numa_node(FIX_op_hdl_private->FIX_op_channel_public_attribs.recv_cpu_id);
     if(-1 == node_id)
         {
-        printf("\nError: Invalid NUMA Node, Exit.");
+        console_log_write("%s:%d Error: Invalid NUMA Node, Exit\n",__FILE__,__LINE__);
         return PAX_ERRNO_PS_NUMA_CPUID_INVALID;
         }
     FIX_op_hdl_private->channel_data_recv_bfr_hp = __stn_numa_node_allocate_memory (node_id, STB_HFT_CHNL_HP_BUFFER_SIZE_MAX, NUMA_PRIVATE);
 
     if(0 == FIX_op_hdl_private->channel_data_recv_bfr_hp)
         {
-        printf("\nError: Huge page allocation failed, Exit.");
+        console_log_write("%s:%d Error: Huge page allocation failed, Exit\n",__FILE__,__LINE__);
         return PAX_ERRNO_NUMA_HUGE_PAGE_ALLOC_FAIL;
         }
     
-    printf("FIX NUMA mmap....OK.\n");
+    console_log_write("%s:%d FIX NUMA mmap....OK.\n",__FILE__,__LINE__);
     fflush(stdout);
 
     FIX_op_hdl_private->generic_msg_bfr_segment_sz_total = 2*1024*1024;// TWOMB
@@ -168,20 +170,20 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
 
     if(0 == FIX_op_hdl_private->generic_msg_bfr_segment_hp)
         {
-        printf("\nError: Format Msg Huge page allocation failed for generic message, Exit.");
+        console_log_write("%s:%d Error: Format Msg Huge page allocation failed for generic message, Exit\n",__FILE__,__LINE__);
         return PAX_ERRNO_NUMA_HUGE_PAGE_ALLOC_FAIL;
         }
 
     // set up the generic msg infrastructure
     stn_hft_FIX_op_channel_setup_generic_msg_buffer(FIX_op_hdl_private,FIX_op_channel_attribs);
     
-    printf("FIX generic msg h'ware buffers setup....OK.\n");
+    console_log_write("%s:%d FIX generic msg h'ware buffers setup....OK.\n",__FILE__,__LINE__);
     fflush(stdout);
 
     FIX_op_hdl_private->formattedMsg = (char*)malloc(2048);
     if(0 == FIX_op_hdl_private->formattedMsg)
         {
-        printf("\nError: error allocation local heap vars");
+        console_log_write("%s:%d Error: error allocation local heap vars",__FILE__,__LINE__);
         return STN_ERRNO_FAIL;
         }
 
@@ -191,7 +193,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
         FIX_op_hdl_private->fp_stats_log = fopen(statlogFile,"a+");
         if(NULL == FIX_op_hdl_private->fp_stats_log)
             {
-            printf("\nError: Could not open log file : %s",statlogFile);
+            console_log_write("%s:%d Error: Could not open log file : %s",__FILE__,__LINE__,statlogFile);
             FIX_op_hdl_private->fp_stats_log = 0;
             }
         }
@@ -200,7 +202,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
     // Initialize a SEMAPHORE for the mkt data LL recv thread
     sem_init(&(FIX_op_hdl_private->start_FIX_op_recv_sema),0,0);
 
-    printf("FIX h'ware sem init....OK.\n");
+    console_log_write("%s:%d FIX h'ware sem init....OK.\n",__FILE__,__LINE__);
     fflush(stdout);
 
     // now create the LL recv thread
@@ -209,7 +211,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
                     __stn_hft_fix_op_channel_thr_run,
                     (void*)FIX_op_hdl_private);
 
-    printf("\nFIX OP channel create done..\n");
+    console_log_write("%s:%d FIX OP channel create done..\n",__FILE__,__LINE__);
 
     // now create the Master thread for the pair strategy
     pthread_create(&(FIX_op_hdl_private->fix_pair_strategy_master_thr_hdl),
@@ -232,7 +234,7 @@ int stn_hft_FIX_op_channel_start    (void* pax_hft_FIX_op_channel_handle)
 {
     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
     
-    printf ("Starting CN: hardware FIX Order Processing channel. Posting h/w signal..\n");
+    console_log_write ("%s:%d Starting CN: hardware FIX Order Processing channel. Posting h/w signal..\n",__FILE__,__LINE__);
 
     sem_post(&(FIX_op_hdl_private->start_FIX_op_recv_sema));
 }
@@ -268,7 +270,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
     //set the tread affinit
     if(-1 == __stn_hft_set_thread_affinity(FIX_op_hdl_private->FIX_op_channel_public_attribs.recv_cpu_id))
         {
-        printf("Error: Thread affinity failed.\n");
+        console_log_write("%s:%d Error: Thread affinity failed.\n",__FILE__,__LINE__);
         return 0;
         }
 
@@ -285,7 +287,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
     if (1 == FIX_op_hdl_private->quit)
         return 0;
 
-    printf ("CN h'ware FIX OP channel data recv running...\n");
+    console_log_write ("%s:%d CN h'ware FIX OP channel data recv running...\n",__FILE__,__LINE__);
     fflush(stdout);
 
     for (;;) 
@@ -314,7 +316,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
                 } 
             else if (0 == rng_buf_entry_to_write->data_length)
                 {
-                printf("\nfix_op_channel,Shutdown recv from remote side");
+                console_log_write("%s:%d fix_op_channel,Shutdown recv from remote side\n",__FILE__,__LINE__);
                 break;
                 }
             else 
@@ -459,7 +461,7 @@ int stn_hft_FIX_op_channel_delete   (void* pax_hft_FIX_op_channel_handle)
 
     sleep (3); // sleep for 3 secs before proceeding with releasing memories etc..
 
-    printf ("\nDeleting FIX OP channel..\n");
+    console_log_write ("%s:%d Deleting FIX OP channel..\n",__FILE__,__LINE__);
     fflush(stdout);
 
     /*clear the format msg buffer*/
@@ -473,12 +475,14 @@ int stn_hft_FIX_op_channel_delete   (void* pax_hft_FIX_op_channel_handle)
     
 
     if (!FIX_op_hdl_private->total_bytes_recvd)
-        printf ("\nOops! No data received thus far in hardware for FIX channel %s/%d: on local IP %s\n",
+        console_log_write ("%s:%d No data received thus far in hardware for FIX channel %s/%d: on local IP %s\n",
+																	__FILE__,__LINE__,
                                                                     FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_addr, 
                                                                     FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_port, 
                                                                     FIX_op_hdl_private->FIX_op_channel_public_attribs.local_interface_ip ); 
     else
-        printf("\nFIX OP Channel Delete Stats: %s:%u:%s, processed :%u, dropped %u messages\n",
+        console_log_write("%s:%d FIX OP Channel Delete Stats: %s:%u:%s, processed :%u, dropped %u messages\n",
+						__FILE__,__LINE__,
                         FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_addr,
                         FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_port,
                         FIX_op_hdl_private->FIX_op_channel_public_attribs.local_interface_ip,

@@ -35,6 +35,7 @@ mt      03/12/2014          fixing the tag 37 caching issue with mess posting on
 
 #include "stn_hft_pair_strategy_private.h"
 #include "stn_sdk_version.h"
+#include "console_log.h"
 
 
 
@@ -588,7 +589,9 @@ int stn_hft_update_price_of_B    (/*[IN*/double price_B,
     // TODO: dump the timestamp
 
     rt = rdtsc_pair();
-    printf("\n*stn_hft_update_price_of_B:(%s,%s)- %llu*\n",pair->pair_public.InstrumentCode_A,
+    console_log_write("%s:%d stn_hft_update_price_of_B:(%s,%s)- %llu*\n",
+														__FILE__,__LINE__,
+														pair->pair_public.InstrumentCode_A,
                                                         pair->pair_public.InstrumentCode_B,
                                                         rt);
                                                         
@@ -814,7 +817,7 @@ int __stn_hft_pair_strategy_master_thread_run(void* hdl)
         _pair_globals.fp_pair_log = fopen(_pair_globals._pairlog_file,"w+");
         if(NULL == _pair_globals.fp_pair_log)
             {
-            printf("\nError opening pair log file");
+            console_log_write("%s:%d Error opening pair log file\n",__FILE__,__LINE__);
             fflush(stdout);
             _pair_globals.fp_pair_log = 0;
             }
@@ -838,7 +841,7 @@ int __stn_hft_pair_strategy_master_thread_run(void* hdl)
             if(_pair_globals._number_of_strategy_created > 0)
                 {
                 WRITE_PAIR_LOG("Recieved Message : %s",msg);
-                printf("Received FIX Message : %s\n",msg);
+                console_log_write("%s:%d Received FIX Message : %s\n",__FILE__,__LINE__,msg);
                 
                 // push it to decoding FIX message and inform the various PAIR threads to pick it up
                 __stn_hft_pair_decode_fix_msg(msg,msg_len,&fix_decoded_msg);
@@ -890,7 +893,7 @@ int __stn_hft_pair_send_new_order(struct stn_hft_pair_strategy_attrib_priavte_s 
 
 #if 0
     rt = rdtsc_pair();
-    printf("\n*New Order:(%s,%s)- %llu*\n",pair->pair_public.InstrumentCode_A,
+    console_log_write("\n*New Order:(%s,%s)- %llu*\n",pair->pair_public.InstrumentCode_A,
                                                         pair->pair_public.InstrumentCode_B,
                                                         rt);
     fflush(stdout);
@@ -920,7 +923,8 @@ int __stn_hft_pair_send_order_cancel(struct stn_hft_pair_strategy_attrib_priavte
     iRet = stn_hft_FIX_op_channel_send_order_cancel(pair->fix_op_chnl,OC_crumbs);
 #if 0
     rt = rdtsc_pair();
-    printf("\n*Order Cancel:(%s,%s)- %llu*\n",pair->pair_public.InstrumentCode_A,
+    console_log_write("%s:%d Order Cancel:(%s,%s)- %llu*\n",__FILE__,__LINE__,
+														pair->pair_public.InstrumentCode_A,
                                                         pair->pair_public.InstrumentCode_B,
                                                         rt);
     fflush(stdout);
@@ -953,7 +957,7 @@ int __stn_hft_pair_send_order_replace(struct stn_hft_pair_strategy_attrib_priavt
     iRet =  stn_hft_FIX_op_channel_send_order_replace(pair->fix_op_chnl,OR_crumbs);
 #if 0
     rt = rdtsc_pair();
-    printf("\n*Order Replace:(%s,%s)- %llu*\n",pair->pair_public.InstrumentCode_A,
+    console_log_write("%s:%d Order Replace:(%s,%s)- %llu*\n",__FILE__,__LINE__,pair->pair_public.InstrumentCode_A,
                                             pair->pair_public.InstrumentCode_B,
                                             rt);
     fflush(stdout);
@@ -1772,7 +1776,7 @@ void* __stn_hft_pair_strategy_thr_run (void* hdl)
                     {
 #if 0                    
                     unsigned long long rt = rdtsc_pair();
-                    printf("\nthread post: %llu",rt);
+                    console_log_write("%s:%d thread post: %llu\n",__FILE__,__LINE__,rt);
                     fflush(stdout);
 #endif                    
                     // do the price relationship changes

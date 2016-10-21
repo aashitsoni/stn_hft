@@ -12,6 +12,7 @@
 #include <fcntl.h>
 
 #include "stn_numa_impl.h"
+#include "console_log.h"
 
 
 pid_t gettid()
@@ -36,7 +37,7 @@ int __stn_hft_get_numa_node(int cpu_id)
 
 	if(-1 == node_id)
 		{
-		printf("Error: Invalid cpu id : %d",cpu_id);
+		console_log_write("%s:%d Error: Invalid cpu id : %d",__FILE__,__LINE__,cpu_id);
 		return node_id;
 		}
 	return node_id;
@@ -56,7 +57,7 @@ int __stn_hft_set_thread_affinity(int cpu_id)
 	
 	if(sched_setaffinity(tid,len,(cpu_set_t*)&cpu_mask))
 		{
-		printf("Error: Setting up cpu_affinity :%d,mask :0x%x\n",cpu_id,cpu_mask);
+		console_log_write("%s:%d Error: Setting up cpu_affinity :%d,mask :0x%x\n",__FILE__,__LINE__,cpu_id,cpu_mask);
 		return -1;
 		}
 	return 0;
@@ -74,7 +75,7 @@ void __stn_numa_node_release_memory(unsigned char* pBlock,unsigned long size)
 	unsigned long RoundedSize = (size-modulo)+TWOMB;
 	if(munmap(pBlock,size) == -1)
 	{
-		printf("\nnuma_node_release_memory:unmap failed");
+		console_log_write("%s:%d numa_node_release_memory:unmap failed\n",__FILE__,__LINE__);
 		return;
 	}
 #endif    
@@ -99,7 +100,7 @@ unsigned char* __stn_numa_node_allocate_memory(int requested_node,unsigned long 
 
 	if(huge_page_fs_fd == -1)
 	{
-		printf("\numa_node_allocate_memory:open hugepage failed");
+		console_log_write("%s:%d uma_node_allocate_memory:open hugepage failed\n",__FILE__,__LINE__);
 		return 0;
 
 	}
@@ -109,7 +110,7 @@ unsigned char* __stn_numa_node_allocate_memory(int requested_node,unsigned long 
 
 	if(requested_node_mask == 0)
 	{
-		printf("\nnuma_node_allocate_mememory failed : node mask allocation");
+		console_log_write("%s:%d numa_node_allocate_mememory failed : node mask allocation",__FILE__,__LINE__);
 		return 0;
 
 	}
@@ -123,7 +124,7 @@ unsigned char* __stn_numa_node_allocate_memory(int requested_node,unsigned long 
 	{
  		close(huge_page_fs_fd);
 		numa_set_membind(old_node_mask);
-		printf("\nnuma_node_allocate: memory mapping failed:%u",RoundedSize);
+		console_log_write("%s:%d numa_node_allocate: memory mapping failed:%u",__FILE__,__LINE__,RoundedSize);
 		return 0;
 	}
 

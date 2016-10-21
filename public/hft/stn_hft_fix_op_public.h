@@ -3,12 +3,15 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Copyright (c) 2014 : SwiftTrade Networks LLC, MA
 
+
+file name : public/hft/stn_hft_fix_op_public.h
+
 Author      Date                Comments
 ------      -----               ---------
 mt          01/11/2012          init rev
 mi          03/27/2012          MCX FIX order processing
 vi          04/04/2012          OE fixes for hardware alignment issue
-mt		01/21/2015		fixes for the nse password tags into session
+mt		    01/21/2015		    fixes for the nse password tags into session
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 */
 

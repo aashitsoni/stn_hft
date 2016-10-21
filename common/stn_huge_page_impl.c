@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 
 #include "stn_huge_page_impl.h"
+#include "console_log.h"
 
 #define TWO_MB_PAGE	(2*1024*1024)
 
@@ -16,7 +17,7 @@ void stn_huge_page_memory_release(unsigned char* pBlock,unsigned long long size)
 	unsigned long RoundedSize = (size-modulo)+TWO_MB_PAGE;
 	if(munmap(pBlock,size) == -1)
 	{
-		printf("\nnuma_node_release_memory:unmap failed");
+		console_log_write("%s:%d numa_node_release_memory:unmap failed\n",__FILE__,__LINE__);
 		return;
 	}
 }
@@ -32,7 +33,7 @@ unsigned char* stn_huge_page_memory_allocate(unsigned long long neededBytes)
 
 	if(huge_page_fs_fd == -1)
 	{
-		printf("stn_huge_page_memory_allocate: open hugepage failed\n");
+		console_log_write("%s:%d stn_huge_page_memory_allocate: open hugepage failed\n",__FILE__,__LINE__);
 		fflush(stdout);
 		return 0;
 	}
@@ -41,7 +42,7 @@ unsigned char* stn_huge_page_memory_allocate(unsigned long long neededBytes)
 	if(MAP_FAILED == pBlock)
 	{
  		close(huge_page_fs_fd);
-		printf("stn_huge_page_memory_allocate: memory mapping failed:%u\n",RoundedSize);
+		console_log_write("%s:%d stn_huge_page_memory_allocate: memory mapping failed:%u\n",__FILE__,__LINE__,RoundedSize);
 		fflush(stdout);
 		return 0;
 	}

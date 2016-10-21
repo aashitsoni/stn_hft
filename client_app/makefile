@@ -1,13 +1,16 @@
 CC=gcc
-
-INC = -I../common/ -I../public/ -I../public/hft/ -I../tools -I../utils/ -I../hft/ -I. -I..
-
+INC =  -I. -I.. -I../common/ -I../public/ -I../public/hft/ -I../tools -I../utils/ -I../hft/
 CFLAGS=$(INC)
 
 VPATH =../common ../hft ../tools ../public/hft
 
 SRC= stn_getopt.c \
-     fix_server_test.c
+     fix_server_test.c\
+	 hft_config.c\
+	 fix_client_login.c\
+	 fix_new_order.c\
+	 fix_order_replace.c\
+	 fix_order_cancel.c
 
 ifeq ($(RLDB),Y)
 	DEBUG_FLAG = -ggdb3
@@ -22,23 +25,17 @@ endif
 
 CFLAGS:=$(DEBUG_FLAG) $(CFLAGS)
 
-ODIR=../obj
-LDIR=../libs
-
-#-msse4.2 -xSSE4.2
+ODIR=obj
+LDIR=..
 
 ifeq ($(PAX),Y)
 	TARGETAPP = pax_hft_sample.exe
 	LIBS=-lpthread -lrt -lnuma -L$(LDIR) -lpaxhft
 else 
 	TARGETAPP = fix_test_server.exe
-	LIBS=-L$(LDIR) -lstnhft -lpthread -lrt -lnuma 
+	#LIBS=-Wl,-rpath,$(LDIR) -lstnhft -lpthread -lrt -lnuma
+	LIBS= -L$(LDIR) -lstnhft -lpthread -lrt -lnuma	
 endif
-
-
-
-#LD=icc
-
 
 OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
 

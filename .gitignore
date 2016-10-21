@@ -1,4 +1,12 @@
 /.project
 /obj
-.a
-.obj
+*.a
+*.obj
+*.so*
+*.log
+*.exe
+*.o
+GPATH
+GRTAGS
+GTAGS
+

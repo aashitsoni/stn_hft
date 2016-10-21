@@ -15,6 +15,8 @@
 #include "stn_hft_fix_msgs.h"
 #include "stn_hft_fix_order_db.h"
 #include "Stn_errno.h"
+#include "console_log.h"
+
 
 //- - - - - - - - - - - - 
 
@@ -199,11 +201,11 @@ int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle,unsigned
     WRITE_LOG(FIX_op_hdl_private,time_str,msg,0);
 	
 	rt = rdtsc();
-    printf("\n*Send out: %llu*\n",rt);
+    console_log_write("%s:%d Send out: %llu\n",__FILE__,__LINE__,rt);
 	
 	if(send(FIX_op_hdl_private->sd, msg, total_fix_msg_len, 0) == -1)
         {
-        printf("\nError Sending message out:s\n",msg);
+        console_log_write("%s:%dError Sending message out:s\n",__FILE__,__LINE__,msg);
         fflush(stdout);
         return STN_ERRNO_NODATASENT;
         }
@@ -219,23 +221,24 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 	
 	while(1)
 		{
-		printf("\n%s:%d:Checking login response",__FILE__,__LINE__);
+		console_log_write("%s:%d Checking login response\n",__FILE__,__LINE__);
+		fflush(stdout);
 		while((iMsg = stn_hft_FIX_op_channel_get_next_msg(pax_hft_FIX_op_channel_handle,&msg,&msg_len)) == STN_ERRNO_NODATARECV);
 		
 		if( STN_ERRNO_SUCCESS == iMsg)
 		{
-			printf("\nstn_hft_fix_msgs.c: Recieved Message :%d %s\n",msg_len, msg);
+			console_log_write("%s:%d stn_hft_fix_msgs.c: Recieved Message :%d %s\n",__FILE__,__LINE__,msg_len, msg);
 			if(strstr(msg, "35=A"))
-			{
+			{ 
 				FIX_op_hdl_private->logged_in=1; // success
-				printf("\nstn_hft_fix_msgc.c: Logged in successfully\n");
+				console_log_write("%s:%d stn_hft_fix_msgc.c: Logged in successfully\n",__FILE__,__LINE__);
 				return iMsg;
 			}
 		}
 		else if(STN_ERRNO_FAIL == iMsg)
 		{
 			FIX_op_hdl_private->logged_in = -1; // failure
-			printf("\nstn_hft_fix_msgs.c: Closure of channel");
+			console_log_write("%s:%d stn_hft_fix_msgs.c: Closure of channel\n",__FILE__,__LINE__);
 			break;
 		}
 		sleep(1);
@@ -338,10 +341,10 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 	 new_password_len = strlen(FIX_op_hdl_private->session_constants.tag_925_newpassword);
 	 
 	 if(new_password_len > 0)
-	 {
-	 printf("changing password at the login...\n");
-	 return stn_hft_FIX_op_channel_login_with_change_password(pax_hft_FIX_op_channel_handle);
-	 }
+		 {
+		 console_log_write("%s:%d changing password at the login...\n",__FILE__,__LINE__);
+		 return stn_hft_FIX_op_channel_login_with_change_password(pax_hft_FIX_op_channel_handle);
+		 }
 	 
 	if(FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length >0)
 		{

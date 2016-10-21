@@ -11,6 +11,8 @@
 #include "stn_hft_mkt_data_private.h"
 //#include "stn_hft_nse_mkt_data.h"
 #include "stn_numa_impl.h"
+#include "console_log.h"
+
 
 
 
@@ -120,7 +122,7 @@ int stn_hft_mkt_data_channel_tcp_create (struct stn_hft_mkt_channel_public_s* mk
 		return -1;
 	}
 	else
-		printf("Opening TCP socket....OK.\n");
+		console_log_write("%s:%d Opening TCP socket....OK.\n",__FILE__,__LINE__);
 
 	/* 
 	 Enable tcp_low_latency
@@ -172,7 +174,7 @@ int stn_hft_mkt_data_channel_mcast_create (struct stn_hft_mkt_channel_public_s* 
 		return STN_ERRNO_HFT_SOCKET_CREATION_FAIL;
 	}
 	else
-		printf("Opening datagram socket....OK.\n");
+		console_log_write("%s:%d Opening datagram socket....OK.\n",__FILE__,__LINE__);
 
 	/* Enable SO_REUSEADDR to allow multiple instances of this application 
 	   to receive copies of the multicast datagrams. 
@@ -188,7 +190,7 @@ int stn_hft_mkt_data_channel_mcast_create (struct stn_hft_mkt_channel_public_s* 
 			return -1;
 		}
 		else
-			printf("Setting SO_REUSEADDR...OK.\n");
+			console_log_write("%s:%d Setting SO_REUSEADDR...OK.\n",__FILE__,__LINE__);
 	}
 #endif
 
@@ -206,7 +208,7 @@ int stn_hft_mkt_data_channel_mcast_create (struct stn_hft_mkt_channel_public_s* 
 		return STN_ERRNO_HFT_HW_SOCKET_BIND_FAIL;
 	}
 	else
-		printf("Binding datagram socket...OK.\n");
+		console_log_write("%s:%d Binding datagram socket...OK.\n",__FILE__,__LINE__);
 	 
 	/* 
 	   JOIN the MULTICAST group specified by mkt_chnl_public->mkt_data_addr on the local interface with IP 
@@ -220,13 +222,15 @@ int stn_hft_mkt_data_channel_mcast_create (struct stn_hft_mkt_channel_public_s* 
 	
 	if(setsockopt(_mkt_chnl_hdl_private->sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void *)&(_mkt_chnl_hdl_private->mc_group), sizeof(_mkt_chnl_hdl_private->mc_group)) < 0)
 	{
-		printf("Join ERROR. Multicast group: %s, Local Interface: %s.\n",mkt_chnl_public->mkt_data_addr, mkt_chnl_public->local_interface_ip);
+		console_log_write("%s:%d Join ERROR. Multicast group: %s, Local Interface: %s.\n",
+					__FILE__,__LINE__,mkt_chnl_public->mkt_data_addr, mkt_chnl_public->local_interface_ip);
 		perror("Exiting...\n");
 		close(_mkt_chnl_hdl_private->sd);
 		return STN_ERRNO_HFT_MCAST_MEMBERSHIP_FAIL;
 	}
 	else
-		printf("ADD_MEMBERSHIP OK. Multicast group: %s, Local Interface: %s.\n",mkt_chnl_public->mkt_data_addr, mkt_chnl_public->local_interface_ip);
+		console_log_write("%s:%d ADD_MEMBERSHIP OK. Multicast group: %s, Local Interface: %s.\n",
+		__FILE__,__LINE__, mkt_chnl_public->mkt_data_addr, mkt_chnl_public->local_interface_ip);
 
 	/*DO:
 		0. Identify the CPU node for the incoming CPU id.
@@ -237,14 +241,14 @@ int stn_hft_mkt_data_channel_mcast_create (struct stn_hft_mkt_channel_public_s* 
 	node_id = __stn_hft_get_numa_node(_mkt_chnl_hdl_private->mkt_channel_public.recv_cpu_id);
 	if(-1 == node_id)
 		{
-		printf("Error: Invalid NUMA Node, Exit.");
+		console_log_write("%s:%d Error: Invalid NUMA Node, Exit\n",__FILE__,__LINE__);
 		return PAX_ERRNO_PS_NUMA_CPUID_INVALID;
 		}
 	_mkt_chnl_hdl_private->channel_data_hp_buffer = __stn_numa_node_allocate_memory (node_id, STB_HFT_CHNL_HP_BUFFER_SIZE_MAX, NUMA_PRIVATE);
 
 	if(0 == _mkt_chnl_hdl_private->channel_data_hp_buffer)
 		{
-		printf("Error: Huge page allocation failed, Exit.");
+		console_log_write("%s:%d Error: Huge page allocation failed, Exit\n",__FILE__,__LINE__);
 		return PAX_ERRNO_PS_MAP_FULL;
 		}
 
@@ -265,7 +269,7 @@ int stn_hft_mkt_data_channel_start (void* hdl)
 {
 	struct _stn_hft_mkt_channel_handle_private_s *_mkt_chnl_hdl = (struct _stn_hft_mkt_channel_handle_private_s *)hdl;
 	
-	printf ("starting hardware mkt channel. posting h/w signal..\n");
+	console_log_write ("%s:%d starting hardware mkt channel. posting h/w signal..\n",__FILE__,__LINE__);
 
 	sem_post(&(_mkt_chnl_hdl->start_mkt_data_sema));
 }
@@ -329,7 +333,7 @@ int __stn_hft_mkt_data_channel_thr_run (void* hdl)
 	//set the tread affinit
 	if(-1 == __stn_hft_set_thread_affinity(_mkt_chnl_hdl->mkt_channel_public.recv_cpu_id))
 		{
-		printf("Error: Thread affinity failed.\n");
+		console_log_write("%s:%d Error: Thread affinity failed.\n",__FILE__,__LINE__);
 		return 0;
 		}
 
@@ -346,7 +350,7 @@ int __stn_hft_mkt_data_channel_thr_run (void* hdl)
 	if (1 == _mkt_chnl_hdl->quit)
 		return 0;
 
-	printf ("h'ware mkt channel data get running...\n");
+	console_log_write ("%s:%d h'ware mkt channel data get running...\n",__FILE__,__LINE__);
 
 	FD_ZERO(&read_set);
 	for (;;) 
@@ -429,7 +433,8 @@ int __stn_hft_mkt_data_channel_thr_run (void* hdl)
 #endif		
 		}	// end of for(;;) Endless loop for recieving packets from driver
 
-		printf("\nMarketdata Channel : %s:%u, processed :%u, dropped %u messages\n",
+		console_log_write("%s:%d Marketdata Channel : %s:%u, processed :%u, dropped %u messages\n",
+						__FILE__,__LINE__,
 						_mkt_chnl_hdl->mkt_channel_public.mkt_data_addr,
 						_mkt_chnl_hdl->mkt_channel_public.mkt_data_port,
 						_mkt_chnl_hdl->mkt_chnl_rng_buf_write_index,
@@ -446,23 +451,26 @@ int stn_hft_mkt_data_channel_delete (void* hdl)
 
 	sleep (3); // sleep for 3 secs before proceeding with releasing memories etc..
 
-	printf ("deleting mkt data channel..\n");
+	console_log_write ("%s:%d deleting mkt data channel..\n",__FILE__,__LINE__);
 
 	if (!_mkt_chnl_hdl->total_bytes_recvd)
-		printf ("Oops! No data received thus far in hardware for mcast channel %s/%d: on local IP %s\n",_mkt_chnl_hdl->mkt_channel_public.mkt_data_addr, _mkt_chnl_hdl->mkt_channel_public.mkt_data_port, _mkt_chnl_hdl->mkt_channel_public.local_interface_ip ); 
+		console_log_write ("%s:%d No data received thus far in hardware for mcast channel %s/%d: on local IP %s\n",
+		__FILE__,__LINE__,_mkt_chnl_hdl->mkt_channel_public.mkt_data_addr, _mkt_chnl_hdl->mkt_channel_public.mkt_data_port, _mkt_chnl_hdl->mkt_channel_public.local_interface_ip ); 
 
 	if (STN_HFT_MKT_CHANNEL_TYPE_MUDP == _mkt_chnl_hdl->channel_type)
 	{
 		if(setsockopt(_mkt_chnl_hdl->sd, IPPROTO_IP, IP_DROP_MEMBERSHIP, (char *)&(_mkt_chnl_hdl->mc_group), sizeof(_mkt_chnl_hdl->mc_group)) < 0)
 		{
-			printf("M'CAST Group Leave ERROR. Multicast group: %s, Local Interface: %s.\n",
+			console_log_write("%s:%d M'CAST Group Leave ERROR. Multicast group: %s, Local Interface: %s.\n",
+									__FILE__,__LINE__,
 									_mkt_chnl_hdl->mkt_channel_public.mkt_data_addr, 
 									_mkt_chnl_hdl->mkt_channel_public.local_interface_ip);
 			perror("Exiting...\n");
 			close(_mkt_chnl_hdl->sd);
 			return -1;
 		}else 
-			printf("DROP_MEMBERSHIP OK. Leaving Multicast group: %s, Local Interface: %s.\n",
+			console_log_write("%s:%d DROP_MEMBERSHIP OK. Leaving Multicast group: %s, Local Interface: %s.\n",
+									__FILE__,__LINE__,
 									_mkt_chnl_hdl->mkt_channel_public.mkt_data_addr, 
 									_mkt_chnl_hdl->mkt_channel_public.local_interface_ip);
 	}
