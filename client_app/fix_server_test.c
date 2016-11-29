@@ -73,27 +73,32 @@ int hft_client_fix_heartbeat_thread (void* hdl)
 	
 }
 
-int print_stn_fix_client_header()
+int print_stn_fix_client_header(int logged_in)
 {
-	printf("\n***************************");
-	printf("\n*   STN FIX HFT Server *\n");
-	printf("    FIX Gateway IP : %s\n",g_hft_config.g_fix_gw);
-	printf("    FIX Gateway Port: %s\n",g_hft_config.g_fix_port);
-	printf("    Client Interface   : %s\n\n",g_hft_config.g_interface);
-	
-	
+	printf("\n");
+	if(logged_in)
+		printf("    STN FIX HFT Connection (Logged into the FIX server)\n");
+	else
+		printf("    STN FIX HFT Connection (Not logged into the FIX server)\n");
+		
+	printf(" ----------------------------------------------\n");
+	printf("*      FIX Gateway IP     : %s\n",g_hft_config.g_fix_gw);
+	printf("*      FIX Gateway Port   : %s\n",g_hft_config.g_fix_port);
+	printf("*      Client Interface   : %s\n",g_hft_config.g_interface);
+	printf("\n");
+	return 0;
 }
 
 int process_for_logged_out_screen(void *chnl_hdl)
 {
 
 	int choice = 0;
-	print_stn_fix_client_header();
+	print_stn_fix_client_header(0);
 	
-	printf("\n          [1] Login");
-	printf("\n         [11] Configuration");
-	printf("\n         [12] Exit");
-	printf("\n\n         Enter Choice:");
+	printf("  [1] Login\n");
+	printf(" [11] Configuration\n");
+	printf(" [12] Exit\n");
+	printf(" Enter Choice:");
 	scanf("%d",&choice);
 	
 	if(choice == 1) // do the login
@@ -126,39 +131,44 @@ int process_for_logged_out_screen(void *chnl_hdl)
 int process_for_logged_in_screen(void *chnl_hdl)
 {
 	int choice = 0;
-	print_stn_fix_client_header();
+	print_stn_fix_client_header(1);
 	
-	printf("\n          [1] Logout");
-	printf("\n          [2] New Order");
-	printf("\n          [3] Change Order");
-	printf("\n          [4] Cancel Order");
-	printf("\n          [5] List Order");
-	printf("\n         [11] Configuration");
-	printf("\n         [12] Exit");
-	printf("\n\n         Enter Choice:");
+	printf("  [1] Logout\n");
+	printf("  [2] New Order\n");
+	printf("  [3] Change Order\n");
+	printf("  [4] Cancel Order\n");
+	printf("  [5] List Order\n");
+	printf(" [11] Configuration\n");
+	printf(" [12] Exit\n");
+	printf(" Enter Choice:");
 	scanf("%d",&choice);
 	
 	switch(choice)
 		{
 		case 1:
-			
+			//TODO : send logout message
 			break;
 		case 2:
-			
+			//TODO : Send New order message
 			break;
 		case 3:
+			//TODO : Order Replace
 			break;
 			
 		case 4:
+			//TODO : Order Cancel
 			break;
 			
 		case 5:
+			//TODO : List Order
 			break;
 		
 		case 11:
+			// TODO : Configuration details
 			break;
 			
 		case 12:
+			// exit the application. make sure you logoff before you exit
 			return -1;
 			
 			
@@ -302,7 +312,7 @@ int main (int argc, char** argv)
 	if(ans != 1)
 		return 0;
 	
-	printf("\nDo you want to provide initial sequence number?(default 1)");
+	printf("\nDo you want to provide initial sequence number?(default 0)");
 	scanf("%d",&seqNum);
 
 
