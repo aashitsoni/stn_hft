@@ -237,7 +237,7 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 			else if(strstr(msg,"35=5"))
 			{
 				FIX_op_hdl_private->logged_in=5; // loged out messages
-				console_log_write("%s:%d stn_hft_fix_msgs.c: Received logout\n",__FILE__,__LINE___);
+				console_log_write("%s:%d stn_hft_fix_msgs.c: Received logout\n",__FILE__,__LINE__);
 				return STN_ERRNO_LOGIN_ERROR;
 			}
 		}
@@ -414,6 +414,7 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
 
     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
     char time_str[100];
+	int iRet = 0;
 
 //    uint64_t ticks_start =0, ticks_to_fmt =0, ticks_to_snd =0, ticks_to_log =0; 
 
@@ -477,17 +478,17 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
         }
 
 
-    if(  STN_ERRNO_SUCCESS == stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
+	iRet = stn_hft_FIX_op_send_generic_msg(pax_hft_FIX_op_channel_handle,
                                             ORDER_NEW_MSG_TYPE,
                                             &oe_msg[FIX_MSG_OFFSET],
-                                            msg_len, time_str))
+                                            msg_len, time_str);
+    if(  STN_ERRNO_SUCCESS == iRet)
     	{
-		 if (STN_ERRNO_SUCCESS == stn_hft_FIX_add_new_order_into_db(pax_hft_FIX_op_channel_handle,p_FIX_op_new_order_crumbs))
-		 	{
-		 	
-		 	}
-    	}
 
+		iRet = stn_hft_FIX_add_new_order_into_db(pax_hft_FIX_op_channel_handle,p_FIX_op_new_order_crumbs);
+		}
+
+	return iRet;
         
 }
 

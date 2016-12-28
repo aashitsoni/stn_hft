@@ -47,7 +47,7 @@ LIBS=-lpthread -lrt -lnuma
 OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
 
 $(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -fpic -g -Wall -o $@ $< $(CFLAGS)
+	$(CC) -c -fpic -g -Werror -o $@ $< $(CFLAGS)
 
 $(TARGETAPP): $(OBJS)
 	@echo making $(TARGETAPP) in $(TARGET) mode..

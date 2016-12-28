@@ -1,0 +1,58 @@
+Download Dynamic DNS Update Client from https://www.noip.com/download?page=win
+
+User1 will use the following settings for Dynamic DNS Update Client
+
+User - globeclient
+Password - GC@123456
+Host to Manage - globeuser1.ddns.net
+
+User1 will use the following settings for Dynamic DNS Update Client
+
+User - globeclient
+Password - GC@123456
+Host to Manage - globeuser2.ddns.net
+
+RDP Access IP - 125.22.90.84
+RDP Access Port - 8762
+Username : gcmlit
+password : GM@123456
+
+
+network card:
+RDP Machine Local Lan IP (Also Works As FIX TAP)- 130.130.130.112
+RDP Machine Lan IP Connecting to Exchange - 10.211.33.98
+
+linux server - 
+username - root
+password - 123456
+
+
+FTP client
+User : client
+Port : 2121
+host : 125.22.90.84
+password : asdf1234
+
+
+
+Server Local Lan IP Address Connecting to FIX TAP - 130.130.130.62
+CM : 9651
+FO : 9652
+
+
+Exchange User Id as below :
+
+CM	-	13626
+Password-	Neat@CM1
+F&O	-	2515
+Password-	Neat@FO1
+Currency-	1134
+Password-	Neat@CD1
+
+These are exchange default passowrds. Please change the password on first login.
+
+Access to Server and Gateway Machine will be available from 17:30 hrs to 23:30 hrs IST from Monday to Friday.
+
+Please check access and connectivity to exchange daily at 17:30 hrs so that I can troubleshoot any problems that you might face in connectivity
+
+

@@ -95,6 +95,7 @@ int process_for_logged_out_screen(void *chnl_hdl)
 {
 
 	int choice = 0;
+	int iRet = STN_ERRNO_SUCCESS;
 	print_stn_fix_client_header(0);
 	
 	printf("  [1] Login\n");
@@ -107,15 +108,16 @@ int process_for_logged_out_screen(void *chnl_hdl)
 		{
 		if(g_logged_in == 0)
 			{
-			g_logged_in = hft_client_fix_channel_process_login(chnl_hdl);
-			if(STN_ERRNO_LOGIN_ERROR == g_logged_in )
+			iRet = hft_client_fix_channel_process_login(chnl_hdl);
+			if(STN_ERRNO_LOGIN_ERROR == iRet )
 				{
 				console_log_write("Recieved Logout from peer");
 				printf("\nRecieved Error while logging in. exiting..");
 				return -1; // return from the program with the exit flag set based on the erorcode if known
 				}
-			else if(STN_ERRNO_SUCCESS == g_logged_in)
+			else if(STN_ERRNO_SUCCESS == iRet)
 				{
+				g_logged_in = 1;// successfully logged into the server
 				pthread_create(&g_hb_thread, NULL, hft_client_fix_heartbeat_thread,chnl_hdl);
 				}
 			}
