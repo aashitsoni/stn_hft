@@ -1,0 +1,1 @@
+1. Introduce heartbeat interval in session constant and can be configurable using the hft_config.cfg file.

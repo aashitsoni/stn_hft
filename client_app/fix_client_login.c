@@ -41,9 +41,8 @@ int hft_client_fix_channel_process_login(void* chnl_hdl)
 	int msg_len;
 	int iMsg = 0;
 
-	if(STN_ERRNO_SUCCESS ==	stn_hft_FIX_op_channel_login (chnl_hdl))
-		return 1;
+	iMsg = stn_hft_FIX_op_channel_login (chnl_hdl);
 
-	return 0;
+	return iMsg;
 }
 

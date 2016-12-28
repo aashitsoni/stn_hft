@@ -35,7 +35,7 @@
 										"95=%u%c"	  //11 – RawDataLength| 
 										"96=%s%c"	  // 13641,13640 |	-- Raw Data
 										"98=0%c"	  //| -- Encryption Method
-										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
+										"108=30%c"	  // | -- HeartBtInterval (SECONDS)
 										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c";  // 554 password encoding in clear text
 	
@@ -44,7 +44,7 @@
 										"95=%u%c"	  //11 – RawDataLength| 
 										"96=%s%c"	  // 13641,13640 |	-- Raw Data
 										"98=0%c"	  //| -- Encryption Method
-										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
+										"108=30%c"	  // | -- HeartBtInterval (SECONDS)
 										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c";  // 554 password encoding in clear text
 	
@@ -55,7 +55,7 @@
 										"95=%u%c"	  //11 – RawDataLength| 
 										"96=%s%c"	  // 13641,13640 |	-- Raw Data
 										"98=0%c"	  //| -- Encryption Method
-										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
+										"108=30%c"	  // | -- HeartBtInterval (SECONDS)
 										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c"  // 554 password encoding in clear text
 										"925=%s%c"; // 925 - new password in clear text
@@ -65,7 +65,7 @@
 										"95=%u%c"	  //11 – RawDataLength| 
 										"96=%s%c"	  // 13641,13640 |	-- Raw Data
 										"98=0%c"	  //| -- Encryption Method
-										"108=50%c"	  // | -- HeartBtInterval (SECONDS)
+										"108=30%c"	  // | -- HeartBtInterval (SECONDS)
 										"141=Y%c"	 // |  -- ResetSeqNumFlag, if both sides should reset or not
 										"554=%s%c"  // 554 password encoding in clear text
 										"925=%s%c"; // 925 - new password in clear text

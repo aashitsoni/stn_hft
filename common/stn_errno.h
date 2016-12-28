@@ -17,7 +17,7 @@ http://www-numi.fnal.gov/offline_software/srt_public_context/WebDocs/Errors/unix
 #define STN_ERRNO_NODATASENT                        0x0004
 #define STN_ERRNO_BUFFER_TOO_LONG                   0x0005
 #define STN_ERRNO_PARAM_PROBLEM						0x0006
-
+#define STN_ERRNO_LOGIN_ERROR						0x0007
 //----------------
 // PAS DEVICE 
 #define	PAX_ERRNO_DEVICE_ALREADY_STARTED			0x0010

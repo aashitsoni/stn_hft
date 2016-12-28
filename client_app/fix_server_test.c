@@ -89,6 +89,8 @@ int print_stn_fix_client_header(int logged_in)
 	return 0;
 }
 
+// process for logged out screen. - if login command is issued and the process returns log out. we should 
+// handle it gracefully and terminate the process fine. with proper evidence of logs and other material if requiree;.
 int process_for_logged_out_screen(void *chnl_hdl)
 {
 
@@ -106,10 +108,15 @@ int process_for_logged_out_screen(void *chnl_hdl)
 		if(g_logged_in == 0)
 			{
 			g_logged_in = hft_client_fix_channel_process_login(chnl_hdl);
-			//once logged in set the heartbeat thread
-			if(g_logged_in == 1)
+			if(STN_ERRNO_LOGIN_ERROR == g_logged_in )
 				{
-					pthread_create(&g_hb_thread, NULL, hft_client_fix_heartbeat_thread,chnl_hdl);
+				console_log_write("Recieved Logout from peer");
+				printf("\nRecieved Error while logging in. exiting..");
+				return -1; // return from the program with the exit flag set based on the erorcode if known
+				}
+			else if(STN_ERRNO_SUCCESS == g_logged_in)
+				{
+				pthread_create(&g_hb_thread, NULL, hft_client_fix_heartbeat_thread,chnl_hdl);
 				}
 			}
 		}

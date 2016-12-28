@@ -309,7 +309,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
                                                          &rng_buf_entry_to_write->data[0], 
                                                          msg_bf_sz,0);
             
-            if ( -1 == rng_buf_entry_to_write->data_length)
+            if (  rng_buf_entry_to_write->data_length < 0)
                 {
                 perror ("\nfix_op_channel,recv error");     
                 break;

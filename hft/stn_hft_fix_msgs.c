@@ -234,6 +234,12 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 				console_log_write("%s:%d stn_hft_fix_msgc.c: Logged in successfully\n",__FILE__,__LINE__);
 				return iMsg;
 			}
+			else if(strstr(msg,"35=5"))
+			{
+				FIX_op_hdl_private->logged_in=5; // loged out messages
+				console_log_write("%s:%d stn_hft_fix_msgs.c: Received logout\n",__FILE__,__LINE___);
+				return STN_ERRNO_LOGIN_ERROR;
+			}
 		}
 		else if(STN_ERRNO_FAIL == iMsg)
 		{
