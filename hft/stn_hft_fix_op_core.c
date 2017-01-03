@@ -332,6 +332,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
                 // ring buffer  increment by handled thro local variable
                 //__sync_add_and_fetch(&FIX_op_hdl_private->FIX_op_chnl_rng_buf_write_index,1);
                 ++FIX_op_hdl_private->FIX_op_chnl_rng_buf_write_index;
+				// TODO: implement function callback mechanism to process the incoming 
 
                 }
             }

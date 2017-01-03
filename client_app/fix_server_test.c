@@ -40,7 +40,7 @@ mt 			10/19/2016          client application changes for the login tests.
 int bShutdown = 0;
 int seqNum=1;
 int bAppRunning = 1;
-
+int g_heartbeatInt = 50;// seconds
 HFT_CONFIG_T g_hft_config;
 int g_logged_in;
 pthread_t 	g_hb_thread = NULL;
@@ -59,15 +59,31 @@ __inline__ uint64_t rdtsc_lcl(void) {
     return (uint64_t)hi << 32 | lo;
 }
 
+int hft_client_fix_msg_processing_thread(void* hdl)
+{
+	char msg[4000];
+	int msg_len=0;
+	int iRet = 0;
+	while(bAppRunning == 1)
+	{
+		iRet = stn_hft_FIX_op_channel_get_next_msg,&msg,&msg_len);
+		if(iRet == STN_ERRNO_SUCCESS)
+			{
+			// process fix message
+			hft_client_decode_fix_message(hdl,msg,msg_len);
+			
+			}
+		else if(iRet != STN_ERRNO_NODATARECV) // some error
+			break;
+	}
+}
 
 int hft_client_fix_heartbeat_thread (void* hdl)
 {
 	while(bAppRunning == 1)
 		{
-
+		sleep(g_heartbitInt);//sleep for 30 seconds
 		stn_hft_FIX_op_channel_send_hb(hdl);
-
-		sleep(30);//sleep for 30 seconds
 		}
 
 	
@@ -118,6 +134,9 @@ int process_for_logged_out_screen(void *chnl_hdl)
 			else if(STN_ERRNO_SUCCESS == iRet)
 				{
 				g_logged_in = 1;// successfully logged into the server
+				// create message recieve threads only after successful login
+				pthread_create(&g_fix_msg_recv_thread,NULL,hft_client_fix_msg_processing_thread,chnl_hdl);
+				
 				pthread_create(&g_hb_thread, NULL, hft_client_fix_heartbeat_thread,chnl_hdl);
 				}
 			}
@@ -315,6 +334,17 @@ int main (int argc, char** argv)
 	console_log_open();
 	
 	hft_read_config_file();
+	
+	g_heartbeatInt = atoi(g_hft_config.g_fix_tag_108);
+	if(g_heartbeatInt == 0)
+		{
+		g_heartbeatInt = 50; // 50 seconds
+		console_log_write("fix_tag_108: default heartbeat interval: %d",g_heartbeatInt); 
+		}
+	else
+		{
+		console_log_write("fix_tag_108: heartbeat interval: %d\n",g_heartbeatInt);
+		}
 	
 	ans = hft_print_config_info_ask_answer();
 	

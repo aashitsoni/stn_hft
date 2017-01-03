@@ -100,7 +100,9 @@ int hft_read_config_file()
 			pszText = g_hft_config.g_fix_tag_554;
 		else if (strncmp(txt,"new_password",12) == 0)
 			pszText = g_hft_config.g_fix_tag_925;
-		else 
+		else if (strncmp(txt,"fix_tag_108",11) == 0)
+			pszText = g_hft_config.g_fix_tag_108;
+		else
 			pszText = NULL;
 		
 		if(pszText != NULL)

@@ -1,1 +1,6 @@
 1. Introduce heartbeat interval in session constant and can be configurable using the hft_config.cfg file.
+2. Process Logout response from the exchange : use dec27_2.pcap and dec27_3.pcap file for packet capture. - done 
+3. Heartbeat threads should send HB only on specific interval currently it is not the case.
+4. Prepare response to the the test_request from the server to send heartbeat response.
+5. Design New order based on the script for the list of equity to send the message.
+

@@ -69,6 +69,7 @@ typedef struct hft_config_s
 	char g_instrument_B[64];
 	char g_fix_tag_554[64]; // old password
 	char g_fix_tag_925[64]; // new passowrd
+	char g_fix_tag_108[32]; // heartbeat interval
 }HFT_CONFIG_T,*HFT_CONFIG_P;
 
 
