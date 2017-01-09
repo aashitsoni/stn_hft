@@ -10,7 +10,8 @@ SRC= stn_getopt.c \
 	 fix_client_login.c\
 	 fix_new_order.c\
 	 fix_order_replace.c\
-	 fix_order_cancel.c
+	 fix_order_cancel.c\
+	 fix_decode.c
 
 ifeq ($(RLDB),Y)
 	DEBUG_FLAG = -ggdb3
@@ -40,7 +41,7 @@ endif
 OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
 
 $(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -Wall -o $@ $< $(CFLAGS)
 
 $(TARGETAPP): $(OBJS)
 	@echo making $(TARGETAPP) in $(TARGET) mode..

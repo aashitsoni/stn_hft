@@ -9,11 +9,13 @@
 *******************************************************************************************************************/
 #include <sys/mman.h>
 #include <numa.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <pthread.h>
 
 #include "stn_hft_fix_op_private.h"
 #include "stn_numa_impl.h"
 #include "stn_sdk_version.h"
-#include <time.h>
 #include "console_log.h"
 
 
@@ -26,8 +28,8 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // fwd dcecls..
-int __stn_hft_fix_op_channel_thr_run (void* hdl);
-int __stn_hft_pair_strategy_master_thread_run(void*);
+void* __stn_hft_fix_op_channel_thr_run (void* hdl);
+void* __stn_hft_pair_strategy_master_thread_run(void*);
 
 void stn_hft_FIX_op_channel_setup_generic_msg_buffer(struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private,
     struct stn_hft_FIX_op_channel_public_attrib_s* FIX_op_channel_attribs);
@@ -103,7 +105,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
     local_addr.sin_family = AF_INET;
     local_addr.sin_port = htons(0);  // Random port
     
-    local_addr.sin_addr.s_addr = inet_addr(FIX_op_hdl_private->FIX_op_channel_public_attribs.local_interface_ip);
+    local_addr.sin_addr.s_addr = inet_addr((const char*) FIX_op_hdl_private->FIX_op_channel_public_attribs.local_interface_ip);
 
     ret = bind(FIX_op_hdl_private->sd,(struct sockaddr*)&local_addr,sizeof(struct sockaddr));
     
@@ -125,7 +127,7 @@ int stn_hft_FIX_op_channel_create   (struct stn_hft_FIX_op_channel_public_attrib
     memset((char *) &(FIX_op_hdl_private->svr_addr), 0, sizeof(FIX_op_hdl_private->svr_addr));
     FIX_op_hdl_private->svr_addr.sin_family = AF_INET;
     FIX_op_hdl_private->svr_addr.sin_port = htons(FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_port);
-    FIX_op_hdl_private->svr_addr.sin_addr.s_addr = inet_addr(FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_addr);;
+    FIX_op_hdl_private->svr_addr.sin_addr.s_addr = inet_addr((const char*)FIX_op_hdl_private->FIX_op_channel_public_attribs.FIX_gway_addr);;
 
     if (connect(FIX_op_hdl_private->sd, (struct sockaddr*)&(FIX_op_hdl_private->svr_addr), sizeof(FIX_op_hdl_private->svr_addr)) < 0)
     {
@@ -237,6 +239,7 @@ int stn_hft_FIX_op_channel_start    (void* pax_hft_FIX_op_channel_handle)
     console_log_write ("%s:%d Starting CN: hardware FIX Order Processing channel. Posting h/w signal..\n",__FILE__,__LINE__);
 
     sem_post(&(FIX_op_hdl_private->start_FIX_op_recv_sema));
+	return STN_ERRNO_SUCCESS;
 }
 
 
@@ -246,16 +249,16 @@ int stn_hft_FIX_op_channel_start    (void* pax_hft_FIX_op_channel_handle)
 
 
 //----------------------------------------------------------------------------------------------------------------------
-int __stn_hft_fix_op_channel_thr_run (void* hdl)
+void* __stn_hft_fix_op_channel_thr_run (void* hdl)
 {
     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)hdl;
-    fd_set read_set;
-    struct timeval wait_time,start_time,end_time; 
+//    fd_set read_set;
+  //  struct timeval wait_time,start_time,end_time; 
     struct sockaddr_in source_address;  // Get a local address to capture the source of the messages... with m'cast the source would be any upstream m'cast DR
     int msg_bf_sz = STN_HFT_CHNL_MSG_SIZE_MAX;
-    int msg_bytes_read = 0, rval =0;
-    int source_addr_sz = sizeof(source_address);
-    unsigned long time_outs =0;
+//    int msg_bytes_read = 0, rval =0;
+  //  int source_addr_sz = sizeof(source_address);
+//    unsigned long time_outs =0;
 
     unsigned char msg_buff[STN_HFT_CHNL_MSG_SIZE_MAX];
 
@@ -271,7 +274,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
     if(-1 == __stn_hft_set_thread_affinity(FIX_op_hdl_private->FIX_op_channel_public_attribs.recv_cpu_id))
         {
         console_log_write("%s:%d Error: Thread affinity failed.\n",__FILE__,__LINE__);
-        return 0;
+        return NULL;
         }
 
     rng_buf_entry_first = (struct __hft_channel_rng_buf_entry_s*) &FIX_op_hdl_private->channel_data_recv_bfr_hp[0];
@@ -285,7 +288,7 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
 
 
     if (1 == FIX_op_hdl_private->quit)
-        return 0;
+        return NULL;
 
     console_log_write ("%s:%d CN h'ware FIX OP channel data recv running...\n",__FILE__,__LINE__);
     fflush(stdout);
@@ -348,6 +351,8 @@ int __stn_hft_fix_op_channel_thr_run (void* hdl)
 
     FIX_op_hdl_private->quit = 1;
 
+	return NULL;
+
         
                         
 }
@@ -405,8 +410,8 @@ void stn_hft_FIX_op_channel_setup_generic_msg_buffer(struct _stn_hft_FIX_op_chan
                                 TAG_INIT_LEN + // 4 lenght for  sender id sign 
                                 TAG_INIT_LEN + // 4 lenght byte for target id signature
                                 TAG_INIT_LEN + // 4 length bytes for sequence number signature
-                                strlen(FIX_op_hdl_private->session_constants.tag_49_sender_comp_id)+
-                                strlen(FIX_op_hdl_private->session_constants.tag_56_target_comp_id);
+                                strlen((char*)FIX_op_hdl_private->session_constants.tag_49_sender_comp_id)+
+                                strlen((char*)FIX_op_hdl_private->session_constants.tag_56_target_comp_id);
 
 }
 
@@ -499,6 +504,7 @@ int stn_hft_FIX_op_channel_delete   (void* pax_hft_FIX_op_channel_handle)
     // clean up
     close(FIX_op_hdl_private->sd);
     free (FIX_op_hdl_private);
+	return STN_ERRNO_SUCCESS;
 }
 
 
@@ -526,8 +532,9 @@ struct _stn_hft_FIX_op_channel_handle_clone_s* __stn_fix_create_clone_private_ha
 //----------------------------------------------------------------------------------------------------------------------
 int __stn_fix_destroy_clone_private_handle  (struct _stn_hft_FIX_op_channel_handle_clone_s* FIX_clone_handle)
 {
-    if(FIX_clone_handle = 0)
+    if(NULL != FIX_clone_handle)
         free(FIX_clone_handle);
+	
     return STN_ERRNO_SUCCESS;
 
 }

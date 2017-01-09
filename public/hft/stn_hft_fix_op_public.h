@@ -162,6 +162,8 @@ int stn_hft_FIX_op_channel_get_next_msg(void* pax_hft_FIX_op_channel_handle,unsi
 int stn_hft_FIX_op_channel_delete   (void* pax_hft_FIX_op_channel_handle);
 int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle, unsigned char msg_type,unsigned char* msg_buf,int sz_msg_buf, char* time_str);
 int stn_hft_FIX_op_channel_send_hb(void* stn_hft_FIX_op_channel_handle);
+int stn_hft_FIX_op_channel_send_trading_status_request(void* stn_hft_FIX_op_channel_handle);
+
 
 #endif
 

@@ -2,9 +2,7 @@
 /obj
 *.a
 *.obj
-*.so*
 *.log
-*.exe
 *.o
 GPATH
 GRTAGS

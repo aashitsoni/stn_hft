@@ -74,11 +74,13 @@ if(_pair_globals.fp_pair_log && _pair_globals.log_status_flag)
     fputs(format_str,_pair_globals.fp_pair_log);
     pthread_spin_unlock(&_pair_globals.pair_file_lock);
     }
+	return STN_ERRNO_SUCCESS;
 }
 
-time_t __stn_pair_get_time(time_t* curr_time)
+time_t* __stn_pair_get_time(time_t* curr_time)
 {
     time(curr_time);
+	return curr_time;
 
 }
 
@@ -91,7 +93,7 @@ void __stn_pair_get_tag60_creation_time(char* psz_tag60_creation_time)
     ptm = gmtime(&pt);
 
 
-    sprintf(psz_tag60_creation_time,"%4u%02u%02u-%02u:%02u:%02u",
+    sprintf((char*)psz_tag60_creation_time,"%4u%02u%02u-%02u:%02u:%02u",
                                      ptm->tm_year+1900,
                                      ptm->tm_mon+1,
                                      ptm->tm_mday,
@@ -121,11 +123,11 @@ int __stn_pair_get_next_sstn_count()
     return _pair_globals._pair_sstn_count;
 }
 
-int __stn_pair_get_next_clordid(char* clorid)
+int __stn_pair_get_next_clordid(uint8_t* clorid)
 {
     time_t curr_time;
     struct tm* ptm;
-    struct _stn_hft_FIX_op_channel_handle_private_s* pvt = (struct _stn_hft_FIX_op_channel_handle_private_s*)_pair_globals.__fix_op_channel;
+//    struct _stn_hft_FIX_op_channel_handle_private_s* pvt = (struct _stn_hft_FIX_op_channel_handle_private_s*)_pair_globals.__fix_op_channel;
     __stn_pair_get_time(&curr_time);
     ptm = localtime(&curr_time);
 
@@ -133,7 +135,7 @@ int __stn_pair_get_next_clordid(char* clorid)
     __sync_add_and_fetch(&_pair_globals._pair_sequence_count,1);
     
 
-    sprintf(clorid,"%s%u%u%u%u%u",_pair_globals.__clordid,
+    sprintf((char*)clorid,"%s%u%u%u%u%u",_pair_globals.__clordid,
                                     _pair_globals._pair_sequence_count,
                                      ptm->tm_mday,
                                      ptm->tm_hour,
@@ -142,145 +144,6 @@ int __stn_pair_get_next_clordid(char* clorid)
 //  sprintf(clorid,"HFT_TEST");
     return STN_ERRNO_SUCCESS;
 
-}
-
-
-int __stn_hft_fix_skip_next_value(uint8_t* pkt,
-                                        int visLen,
-                                        uint8_t* pkt_End)
-{
-    /*grab the tag value*/
-    int offset=0;
-
-    /*loop through the next offset*/
-    for(offset = 0; (pkt+offset) < pkt_End && visLen > 0 && *(pkt+offset)!= FIX_TLV_SEPERATOR ; offset++,visLen--);
-
-    offset++;
-    return (offset);/*increment by 1 as well as we start from 0 offset so the bytes parsed is always 1 more.*/
-}
-
-int __stn_hft_fix_get_next_tag(uint8_t* pkt,
-                                    int visLen,
-                                    uint8_t* pkt_end,
-                                    unsigned int* puTag)
-{
-    /*grab the tag value*/
-    int offset=0;
-    unsigned int uTag = 0;
-    uint8_t* puTagByte = (uint8_t*)&uTag;
-    
-    
-    if(!puTag || visLen< sizeof(*puTag))
-        return FIX_PARSING_ERROR;
-        
-    
-    while (*(pkt+offset) != FIX_TAG_DELIMETER&& offset < visLen)
-    {
-        if(offset < sizeof(*puTag))
-            {
-            *puTagByte = *(pkt+offset);
-            puTagByte++;
-            }
-        offset ++;
-    }
-    offset ++;
-    *puTag = uTag;
-    return (offset);
-}
-
-
-int __stn_hft_fix_get_next_value_as_char    (uint8_t* pkt,
-                                            int visLen,
-                                            uint8_t* pkt_end,
-                                            uint8_t* puByte)
-{
-    int offset  = 0;
-    
-    if(!puByte)
-        return 0;
-
-    *puByte = *(pkt+offset++);
-
-    while ( *(pkt+offset) != FIX_TLV_SEPERATOR)
-    {
-        offset ++;
-        if ( pkt_end - pkt - offset <= 0)
-            return FIX_PARSING_ERROR;
-    }
-
-    offset ++; /*skip the separator*/
-
-    return (offset);
-}
-
-
-int __stn_hft_fix_get_next_value_as_string(uint8_t* pkt,
-                                                    int  visLen,
-                                                    uint8_t* pkt_end,
-                                                    uint8_t* pszValue,
-                                                    int* puSzValueCount)
-{
-    int offset=0;
-
-    if(!pszValue || !puSzValueCount)
-        return 0;
-
-    while ( *(pkt+offset) != FIX_TLV_SEPERATOR )
-    {
-        /*store the value*/
-        if(offset < *puSzValueCount -1 )
-            *(pszValue + offset) = *(pkt+offset);
-
-        offset ++;
-
-        /*Packet boudary check, if crossed the packet boundary, return zero*/
-        if (offset >= visLen)
-            return FIX_PARSING_ERROR;
-    }
-
-    if(offset < *puSzValueCount)
-    {
-        *puSzValueCount = offset;
-        pszValue[*puSzValueCount]=0;
-    }
-    else
-    {
-        pszValue[*puSzValueCount-1]=0;
-    }
-
-    offset ++;
-    return (offset);
-}
-
-int __stn_hft_fix_get_next_value_as_unsigned_int(uint8_t* pkt,
-                                                int visLen,
-                                                uint8_t * pkt_end,
-                                                unsigned int* puValue)
-{
-    unsigned int    offset=0;
-    unsigned int    uValue=0,nValue1,nValue2;
-    unsigned char   uByte = 0;
-
-    while ( *(pkt+offset) != FIX_TLV_SEPERATOR )
-    {
-        uByte   = *(pkt+offset) - ASCII_CHAR;
-        nValue1 = nValue2 = uValue;
-        nValue1<<=3;
-        nValue2<<=1;
-
-        /*uValue    = uValue*FIX_TAG_MULTIPLIER + uByte;*/
-        uValue  = nValue1+nValue2 + uByte;
-
-        /*store the value*/
-        offset ++;
-
-        /*Packet boudary check, if crossed the packet boundary, return zero*/
-        if ( pkt_end - pkt - offset <= 0)
-            return FIX_PARSING_ERROR;
-    }
-    *puValue    = uValue;
-    offset ++;
-    return (offset);
 }
 
 
@@ -295,7 +158,7 @@ int __stn_hft_pair_decode_fix_msg(uint8_t* msg,
     int i = 0;
     int parsed_byte = 0;
     unsigned int uTag = 0;
-    unsigned int szValueCount = 0;
+    int szValueCount = 0;
     unsigned char supported_tag = FIX_HFT_PAIR_MAX_SUPPORTED_FIELD;
 
     WRITE_PAIR_LOG("Entering __stn_hft_pair_decode_fix_msg");
@@ -414,6 +277,7 @@ int stn_hft_init_strat_engines()
     MAX_ACTIVE_ORDERS   
     );
 */
+return STN_ERRNO_SUCCESS;
 }
 
 int stn_hft_create_pair_strategy(/*[IN]*/stn_hft_pair_strategy_attrib* new_pair, 
@@ -513,7 +377,7 @@ struct stn_hft_pair_strategy_attrib_priavte_s* stn_hft_search_active_order_array
     
     for (idx =0; idx < MAX_PAIR_STRATEGY; idx++ )
     {
-        if ((0 == strcmp(pair->active_order[ORDER_A].ClOrdId, msg->ClOrdId)))
+        if ((0 == strcmp((char*)pair->active_order[ORDER_A].ClOrdId, (char*)msg->ClOrdId)))
             {
             WRITE_PAIR_LOG("Leaving stn_hft_search_active_order_array_by_clorid found match A:%c,%s,%s,",
                         msg->OrdStatus,
@@ -521,7 +385,7 @@ struct stn_hft_pair_strategy_attrib_priavte_s* stn_hft_search_active_order_array
                         msg->OrdId);
             return pair;
             }
-        else if (0 == strcmp(pair->active_order[ORDER_B].ClOrdId, msg->ClOrdId))
+        else if (0 == strcmp((char*)pair->active_order[ORDER_B].ClOrdId, (char*)msg->ClOrdId))
             {
             WRITE_PAIR_LOG("Leaving stn_hft_search_active_order_array_by_clorid found match B:%c,%s,%s",
                         msg->OrdStatus,
@@ -533,7 +397,7 @@ struct stn_hft_pair_strategy_attrib_priavte_s* stn_hft_search_active_order_array
         pair++;
     }
     WRITE_PAIR_LOG("Leaving stn_hft_search_active_order_array_by_clorid, nothing found :%s",msg->ClOrdId);
-    return 0;
+    return STN_ERRNO_SUCCESS;
 }
 
 struct stn_hft_pair_strategy_attrib_priavte_s* stn_hft_search_active_order_array_by_strat_handle(struct stn_hft_pair_strategy_attrib_priavte_s *pair_hdl)
@@ -546,7 +410,7 @@ struct stn_hft_pair_strategy_attrib_priavte_s* stn_hft_search_active_order_array
             return pair;
         pair++;
     }
-    return 0;
+    return STN_ERRNO_SUCCESS;
 }
 
 /*
@@ -781,7 +645,7 @@ int process_fix_msg(struct stn_hft_pair_decode_fix_msg_s* fix_msg)
 /*
 master pair thread which does decoding of the fix packets
 */
-int __stn_hft_pair_strategy_master_thread_run(void* hdl)
+void* __stn_hft_pair_strategy_master_thread_run(void* hdl)
 {
 
     struct _stn_hft_FIX_op_channel_handle_private_s* fix_hdl = (struct _stn_hft_FIX_op_channel_handle_private_s*)hdl;
@@ -789,17 +653,17 @@ int __stn_hft_pair_strategy_master_thread_run(void* hdl)
 
 
     struct _stn_hft_FIX_op_channel_handle_clone_s* FIX_Chnl_Clone_hdl = NULL;
-    int err,msg_len;
+    int err;
+	unsigned int msg_len;
     unsigned char* msg = 0;
     struct stn_hft_pair_decode_fix_msg_s fix_decoded_msg;
-    int iReturn = 0;
 
     _pair_globals.__fix_op_channel = &fix_hdl->FIX_op_channel_public_attribs;
     strcpy(_pair_globals.__clordid,"P");
     
     FIX_Chnl_Clone_hdl = __stn_fix_create_clone_private_handle(hdl);
     if(FIX_Chnl_Clone_hdl == NULL)
-        return STN_ERRNO_FAIL;
+        return NULL;
 
     // create a log file
 
@@ -860,6 +724,7 @@ int __stn_hft_pair_strategy_master_thread_run(void* hdl)
         fclose(_pair_globals.fp_pair_log);
 
     __stn_fix_destroy_clone_private_handle(FIX_Chnl_Clone_hdl);
+	return NULL;
     
 }
 
@@ -868,25 +733,25 @@ int __stn_hft_pair_send_new_order(struct stn_hft_pair_strategy_attrib_priavte_s 
                                             struct FIX_OE_variables_s* OE_crumbs)
 {
     int iRet = 0;
-    unsigned long long rt = 0;
+//    unsigned long long rt = 0;
     // FIX send new order message
 
     WRITE_PAIR_LOG("Entering __stn_hft_pair_send_new_order");
     OE_crumbs->tag_21_floor_broker_instr = FLOOR_BROKER_INSTR;
     OE_crumbs->tag_40_order_type = LIMIT_ORDER;
     // TODO: performance minimization 
-    strcpy(OE_crumbs->tag_1_account,pair->pair_public.tag_1_account_name);
-    strcpy(OE_crumbs->tag_200_mat_year_mth , pair->pair_public.tag_200_mat_month);
+    strcpy((char*)OE_crumbs->tag_1_account, (char*)pair->pair_public.tag_1_account_name);
+    strcpy((char*)OE_crumbs->tag_200_mat_year_mth, (char*)pair->pair_public.tag_200_mat_month);
 //    strcpy(OE_crumbs->tag_48_instrument_code,OE_crumbs->tag_48_instrument_code);
-    strcpy(OE_crumbs->tag_167_instrument_type ,pair->pair_public.tag_167_instrument_type);
+    strcpy((char*)OE_crumbs->tag_167_instrument_type, (char*)pair->pair_public.tag_167_instrument_type);
     __stn_pair_get_next_clordid(&OE_crumbs->tag_11_client_order_id[0]);
-    __stn_pair_get_tag60_creation_time(OE_crumbs->tag_60_message_creation_time);
+    __stn_pair_get_tag60_creation_time((char*)OE_crumbs->tag_60_message_creation_time);
     
     
 
     OE_crumbs->tag_9366_strat_id = pair->pair_public.strat_id;
     pair->strat_counter++;
-    snprintf(OE_crumbs->tag_9367_sstn,20,"%s%09d",pair->strat_sstn,__stn_pair_get_next_sstn_count());
+    snprintf((char*)OE_crumbs->tag_9367_sstn,20,"%s%09d",pair->strat_sstn,__stn_pair_get_next_sstn_count());
     
 
     iRet =  stn_hft_FIX_op_channel_send_order_new(pair->fix_op_chnl,OE_crumbs);
@@ -906,11 +771,11 @@ int __stn_hft_pair_send_order_cancel(struct stn_hft_pair_strategy_attrib_priavte
                                         struct FIX_OC_variables_s* OC_crumbs)
 {
     int iRet = 0;
-    unsigned long long rt = 0;
+//    unsigned long long rt = 0;
 
     WRITE_PAIR_LOG("Entering __stn_hft_pair_send_order_cancel");
-    strcpy(OC_crumbs->tag_167_instrument_type, pair->pair_public.tag_167_instrument_type);
-    strcpy(OC_crumbs->tag_200_mat_year_mth , pair->pair_public.tag_200_mat_month);
+    strcpy((char*)OC_crumbs->tag_167_instrument_type, (char*)pair->pair_public.tag_167_instrument_type);
+    strcpy((char*)OC_crumbs->tag_200_mat_year_mth , (char*)pair->pair_public.tag_200_mat_month);
     OC_crumbs->tag_205_mat_day = MAT_DAY;
     OC_crumbs->tag_21_floor_broker_instr = FLOOR_BROKER_INSTR;
 //    strcpy(OC_crumbs->tag_48_instrument_code, OC_crumbs->tag_48_instrument_code);
@@ -918,7 +783,7 @@ int __stn_hft_pair_send_order_cancel(struct stn_hft_pair_strategy_attrib_priavte
 
     OC_crumbs->tag_9366_strat_id = pair->pair_public.strat_id;
     pair->strat_counter++;
-    snprintf(OC_crumbs->tag_9367_sstn,20,"%s%09d",pair->strat_sstn,__stn_pair_get_next_sstn_count());
+    snprintf((char*)OC_crumbs->tag_9367_sstn,20,"%s%09d",pair->strat_sstn,__stn_pair_get_next_sstn_count());
     
     iRet = stn_hft_FIX_op_channel_send_order_cancel(pair->fix_op_chnl,OC_crumbs);
 #if 0
@@ -938,19 +803,19 @@ int __stn_hft_pair_send_order_replace(struct stn_hft_pair_strategy_attrib_priavt
                                         struct FIX_OR_variables_s* OR_crumbs)
 {
     int iRet = 0;
-    unsigned long long rt = 0;
+//    unsigned long long rt = 0;
     // send and order replace 
     WRITE_PAIR_LOG("Entering __stn_hft_pair_send_order_replace");
-    strcpy(OR_crumbs->tag_167_instrument_type , pair->pair_public.tag_167_instrument_type);
-    strcpy(OR_crumbs->tag_200_mat_year_mth , pair->pair_public.tag_200_mat_month);
+    strcpy((char*)OR_crumbs->tag_167_instrument_type , pair->pair_public.tag_167_instrument_type);
+    strcpy((char*)OR_crumbs->tag_200_mat_year_mth , pair->pair_public.tag_200_mat_month);
     OR_crumbs->tag_205_mat_day = MAT_DAY;
     OR_crumbs->tag_21_floor_broker_instr = FLOOR_BROKER_INSTR;
-    strcpy(OR_crumbs->tag_22_alternative_SecurityID , ALTERNATE_SEC_ID);
+    strcpy((char*)OR_crumbs->tag_22_alternative_SecurityID , ALTERNATE_SEC_ID);
     OR_crumbs->tag_40_order_type = LIMIT_ORDER;
 
     OR_crumbs->tag_9366_strat_id = pair->pair_public.strat_id;
     pair->strat_counter++;
-    snprintf(OR_crumbs->tag_9367_sstn,20,"%s%09d",pair->strat_sstn,__stn_pair_get_next_sstn_count());
+    snprintf((char*)OR_crumbs->tag_9367_sstn,20,"%s%09d",pair->strat_sstn,__stn_pair_get_next_sstn_count());
 
  //   strcpy(OR_crumbs->tag_48_instrument_code, OR_crumbs->tag_48_instrument_code);
     __stn_pair_get_next_clordid(&OR_crumbs->tag_11_client_order_id[0]);
@@ -963,6 +828,7 @@ int __stn_hft_pair_send_order_replace(struct stn_hft_pair_strategy_attrib_priavt
     fflush(stdout);
 #endif    
     WRITE_PAIR_LOG("Leaving __stn_hft_pair_send_order_replace:%s ",OR_crumbs->tag_11_client_order_id);
+	return iRet;
 }
 
 
@@ -1027,7 +893,7 @@ int __stn_hft_pair_execute_price_change(struct stn_hft_pair_strategy_attrib_pria
         OE_crumbs.tag_54_side = pair->side_A;
         
         // TODO: optimize for the performance number : for the latency minimization
-        strcpy(OE_crumbs.tag_48_instrument_code,pair->pair_public.InstrumentCode_A);
+        strcpy((char*)OE_crumbs.tag_48_instrument_code,(char*)pair->pair_public.InstrumentCode_A);
 
 //      iReturn =  stn_hft_FIX_op_channel_send_order_new (pair,&OE_crumbs);
         iReturn =  __stn_hft_pair_send_new_order(pair,&OE_crumbs);
@@ -1079,12 +945,12 @@ int __stn_hft_pair_execute_price_change(struct stn_hft_pair_strategy_attrib_pria
                                         pair->pending_qty_A:pair->pair_public.order_size;
                     // send and order replace 
                     OR_crumbs.tag_38_order_qty = order_qty;
-                    strcpy(OR_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_A].ClOrdId);
+                    strcpy((char*)OR_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_A].ClOrdId);
                     OR_crumbs.tag_44_price = price_A;
-                    strcpy(OR_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_A);
+                    strcpy((char*)OR_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_A);
                     OR_crumbs.tag_54_side = pair->side_A;
-                    strcpy(OR_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-                    strcpy(OR_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+                    strcpy((char*)OR_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+                    strcpy((char*)OR_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
                     iReturn  = __stn_hft_pair_send_order_replace(pair,&OR_crumbs);
                     
                     
@@ -1146,12 +1012,12 @@ int __stn_hft_pair_execute_price_change(struct stn_hft_pair_strategy_attrib_pria
                 // send and order replace 
                 WRITE_PAIR_LOG("__stn_hft_pair_execute_price_change:11 ");
                 OR_crumbs.tag_38_order_qty = ord_qty;
-                strcpy(OR_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_B].ClOrdId);
+                strcpy((char*)OR_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_B].ClOrdId);
                 OR_crumbs.tag_44_price = pair_g->Price_B;
-                strcpy(OR_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_B);
+                strcpy((char*)OR_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_B);
                 OR_crumbs.tag_54_side = pair->side_B;
-                strcpy(OR_crumbs.tag_37_order_id,pair->active_order[ORDER_B].OrdId);
-                strcpy(OR_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_B].tag60);
+                strcpy((char*)OR_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_B].OrdId);
+                strcpy((char*)OR_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_B].tag60);
                 
                 iReturn = __stn_hft_pair_send_order_replace(pair,&OR_crumbs);
                 
@@ -1181,7 +1047,7 @@ int __stn_hft_pair_execute_price_change(struct stn_hft_pair_strategy_attrib_pria
                 WRITE_PAIR_LOG("__stn_hft_pair_execute_price_change:14");
                 OE_crumbs.tag_38_order_qty = net_qty_B; // send for the whole net_qty_B
                 OE_crumbs.tag_44_price = pair_g->Price_B;
-                strcpy(OE_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_B);
+                strcpy((char*)OE_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_B);
                 OE_crumbs.tag_54_side = pair->side_B;
                 iReturn = __stn_hft_pair_send_new_order(pair,&OE_crumbs);
                 
@@ -1253,7 +1119,7 @@ int __stn_hft_pair_process_ER_for_instrument_A(struct stn_hft_pair_decode_fix_ms
             // send and order replace 
             OE_crumbs.tag_38_order_qty = order_qty; // send for the whole net_qty_B
             OE_crumbs.tag_44_price = pair_g->Price_B;
-            strcpy(OE_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_B);
+            strcpy((char*)OE_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_B);
             OE_crumbs.tag_54_side = pair->side_B;
             iReturn = __stn_hft_pair_send_new_order(pair,&OE_crumbs);
             
@@ -1283,6 +1149,7 @@ int __stn_hft_pair_process_ER_for_instrument_A(struct stn_hft_pair_decode_fix_ms
         }
 
         WRITE_PAIR_LOG("Leaving __stn_hft_pair_process_ER_for_instrument_A ");
+		return STN_ERRNO_SUCCESS;
 }
 
 
@@ -1358,7 +1225,7 @@ int __stn_hft_pair_process_ER_for_instrument_B(struct stn_hft_pair_decode_fix_ms
                   // send and order replace 
                   OE_crumbs.tag_38_order_qty = order_qty; // send for the whole net_qty_B
                   OE_crumbs.tag_44_price = price_A;
-                  strcpy(OE_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_A);
+                  strcpy((char*)OE_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_A);
                   OE_crumbs.tag_54_side = pair->side_A;
                   iReturn = __stn_hft_pair_send_new_order(pair,&OE_crumbs);
                   
@@ -1384,6 +1251,7 @@ int __stn_hft_pair_process_ER_for_instrument_B(struct stn_hft_pair_decode_fix_ms
         
         }
     WRITE_PAIR_LOG("Leaving __stn_hft_pair_process_ER_for_instrument_B");
+	return STN_ERRNO_SUCCESS;
 }
 
 
@@ -1408,12 +1276,12 @@ int __stn_hft_pair_execute_price_reln_change(struct stn_hft_pair_strategy_attrib
         {
         struct FIX_OR_variables_s OR_crumbs;
         OR_crumbs.tag_38_order_qty = pair_g->order_size;
-        strcpy(OR_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_A);
+        strcpy((char*)OR_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_A);
         OR_crumbs.tag_44_price = price_A;
         OR_crumbs.tag_54_side = pair->side_A;
-        strcpy(OR_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_A].ClOrdId);
-        strcpy(OR_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-        strcpy(OR_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+        strcpy((char*)OR_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_A].ClOrdId);
+        strcpy((char*)OR_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+        strcpy((char*)OR_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
         
         
         iReturn = __stn_hft_pair_send_order_replace (pair,&OR_crumbs);
@@ -1436,6 +1304,7 @@ int __stn_hft_pair_execute_price_reln_change(struct stn_hft_pair_strategy_attrib
             }
         }
     WRITE_PAIR_LOG("Leaving __stn_hft_pair_execute_price_reln_change");
+	return STN_ERRNO_SUCCESS;
 }
 
 
@@ -1462,11 +1331,11 @@ int __stn_hft_pair_execute_net_qty_change(struct stn_hft_pair_strategy_attrib_pr
         if(pair->active_order[ORDER_A].isValidOrder == TRUE)
             {
             struct FIX_OC_variables_s OC_crumbs;
-            strcpy(OC_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_A].ClOrdId);
-            strcpy(OC_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_A);
+            strcpy((char*)OC_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_A].ClOrdId);
+            strcpy((char*)OC_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_A);
             OC_crumbs.tag_54_side = pair->side_A;
-            strcpy(OC_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-            strcpy(OC_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+            strcpy((char*)OC_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+            strcpy((char*)OC_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
 
             iReturn =   __stn_hft_pair_send_order_cancel(pair,&OC_crumbs);
             if(STN_ERRNO_SUCCESS == iReturn)
@@ -1497,12 +1366,12 @@ int __stn_hft_pair_execute_net_qty_change(struct stn_hft_pair_strategy_attrib_pr
             struct FIX_OR_variables_s OR_crumbs;
             double price_A = pair_g->Price_B*pair_g->x + pair_g->y;
             OR_crumbs.tag_38_order_qty = ord_qty;
-            strcpy(OR_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_A);
+            strcpy((char*)OR_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_A);
             OR_crumbs.tag_44_price = price_A;
             OR_crumbs.tag_54_side = pair->side_A;
-            strcpy(OR_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_A].ClOrdId);
-            strcpy(OR_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-            strcpy(OR_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+            strcpy((char*)OR_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_A].ClOrdId);
+            strcpy((char*)OR_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+            strcpy((char*)OR_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
             
             
             iReturn = __stn_hft_pair_send_order_replace (pair,&OR_crumbs);
@@ -1527,6 +1396,7 @@ int __stn_hft_pair_execute_net_qty_change(struct stn_hft_pair_strategy_attrib_pr
         
         }
     WRITE_PAIR_LOG("Leaving __stn_hft_pair_execute_net_qty_change");
+	return STN_ERRNO_SUCCESS;
         
 }
 
@@ -1550,12 +1420,12 @@ int __stn_hft_pair_execute_ord_size_change(struct stn_hft_pair_strategy_attrib_p
             {
             double price_A = pair_g->Price_B*pair_g->x + pair_g->y;
             OR_crumbs.tag_38_order_qty = pair_g->order_size;
-            strcpy(OR_crumbs.tag_48_instrument_code,pair_g->InstrumentCode_A);
+            strcpy((char*)OR_crumbs.tag_48_instrument_code,(char*)pair_g->InstrumentCode_A);
             OR_crumbs.tag_44_price = price_A;
             OR_crumbs.tag_54_side = pair->side_A;
-            strcpy(OR_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_A].ClOrdId);
-            strcpy(OR_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-            strcpy(OR_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+            strcpy((char*)OR_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_A].ClOrdId);
+            strcpy((char*)OR_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+            strcpy((char*)OR_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
             
             
             iReturn = __stn_hft_pair_send_order_replace (pair,&OR_crumbs);
@@ -1579,6 +1449,7 @@ int __stn_hft_pair_execute_ord_size_change(struct stn_hft_pair_strategy_attrib_p
             }
         }
     WRITE_PAIR_LOG("Leaving __stn_hft_pair_execute_ord_size_change");
+	return STN_ERRNO_SUCCESS;
 }
 
 /*
@@ -1592,11 +1463,11 @@ int __stn_hft_pair_cancel_all_active_orders(struct stn_hft_pair_strategy_attrib_
     WRITE_PAIR_LOG("Entering __stn_hft_pair_cancel_all_active_orders");
     if(pair->active_order[ORDER_A].isValidOrder == TRUE)
         {
-        strcpy(OC_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_A].ClOrdId);
-        strcpy(OC_crumbs.tag_48_instrument_code,pair->pair_public.InstrumentCode_A);
+        strcpy((char*)OC_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_A].ClOrdId);
+        strcpy((char*)OC_crumbs.tag_48_instrument_code,(char*)pair->pair_public.InstrumentCode_A);
         OC_crumbs.tag_54_side = pair->side_A;
-        strcpy(OC_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-        strcpy(OC_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+        strcpy((char*)OC_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+        strcpy((char*)OC_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
         
         
         iReturn =   __stn_hft_pair_send_order_cancel(pair,&OC_crumbs);
@@ -1620,11 +1491,11 @@ int __stn_hft_pair_cancel_all_active_orders(struct stn_hft_pair_strategy_attrib_
         
     if(pair->active_order[ORDER_B].isValidOrder == TRUE)
         {
-        strcpy(OC_crumbs.tag_41_orig_clor_id,pair->active_order[ORDER_B].ClOrdId);
-        strcpy(OC_crumbs.tag_48_instrument_code,pair->pair_public.InstrumentCode_B);
+        strcpy((char*)OC_crumbs.tag_41_orig_clor_id,(char*)pair->active_order[ORDER_B].ClOrdId);
+        strcpy((char*)OC_crumbs.tag_48_instrument_code,(char*)pair->pair_public.InstrumentCode_B);
         OC_crumbs.tag_54_side = pair->side_B;
-        strcpy(OC_crumbs.tag_37_order_id,pair->active_order[ORDER_A].OrdId);
-        strcpy(OC_crumbs.tag_60_message_creation_time,pair->active_order[ORDER_A].tag60);
+        strcpy((char*)OC_crumbs.tag_37_order_id,(char*)pair->active_order[ORDER_A].OrdId);
+        strcpy((char*)OC_crumbs.tag_60_message_creation_time,(char*)pair->active_order[ORDER_A].tag60);
         
                 
         iReturn =   __stn_hft_pair_send_order_cancel(pair,&OC_crumbs);
@@ -1647,6 +1518,7 @@ int __stn_hft_pair_cancel_all_active_orders(struct stn_hft_pair_strategy_attrib_
         }
 
     WRITE_PAIR_LOG("Leaving __stn_hft_pair_cancel_all_active_orders");
+	return STN_ERRNO_SUCCESS;
 }
 
 
@@ -1660,16 +1532,16 @@ int  __stn_hft_pair_process_ER(struct stn_hft_pair_decode_fix_msg_s*fix_msg,stru
 
     WRITE_PAIR_LOG("Entering __stn_hft_pair_process_ER:%s,%c",fix_msg->OrdId,fix_msg->OrdStatus);
 
-    if(strcmp(fix_msg->ClOrdId, pair_strategy_private->active_order[ORDER_A].ClOrdId) == 0)
+    if(strcmp((char*)fix_msg->ClOrdId, (char*)pair_strategy_private->active_order[ORDER_A].ClOrdId) == 0)
         {
-        strcpy(pair_strategy_private->active_order[ORDER_A].OrdId,fix_msg->OrdId);
-        strcpy(pair_strategy_private->active_order[ORDER_A].tag60,fix_msg->tag60);
+        strcpy((char*)pair_strategy_private->active_order[ORDER_A].OrdId,(char*)fix_msg->OrdId);
+        strcpy((char*)pair_strategy_private->active_order[ORDER_A].tag60,(char*)fix_msg->tag60);
         WRITE_PAIR_LOG("Information:ER Acks, Order_A :%s,39=%c",fix_msg->OrdId,fix_msg->OrdStatus);
         }
-    else if(strcmp(fix_msg->ClOrdId , pair_strategy_private->active_order[ORDER_B].ClOrdId) == 0)
+    else if(strcmp((char*)fix_msg->ClOrdId , (char*)pair_strategy_private->active_order[ORDER_B].ClOrdId) == 0)
         {
-        strcpy(pair_strategy_private->active_order[ORDER_B].OrdId,fix_msg->OrdId);
-        strcpy(pair_strategy_private->active_order[ORDER_B].tag60,fix_msg->tag60);
+        strcpy((char*)pair_strategy_private->active_order[ORDER_B].OrdId,(char*)fix_msg->OrdId);
+        strcpy((char*)pair_strategy_private->active_order[ORDER_B].tag60,(char*)fix_msg->tag60);
         WRITE_PAIR_LOG("Information:ER Acks, Order_B :%s,39=%c",fix_msg->OrdId,fix_msg->OrdStatus);
         }
     else
@@ -1684,11 +1556,11 @@ int  __stn_hft_pair_process_ER(struct stn_hft_pair_decode_fix_msg_s*fix_msg,stru
             {
             WRITE_PAIR_LOG("Success: Processing ER-fills :%s,39=%c",fix_msg->OrdId,fix_msg->OrdStatus);
             
-            if(strcmp(fix_msg->ClOrdId, pair_strategy_private->active_order[ORDER_A].ClOrdId) == 0)
+            if(strcmp((char*)fix_msg->ClOrdId, (char*)pair_strategy_private->active_order[ORDER_A].ClOrdId) == 0)
                 {
                 __stn_hft_pair_process_ER_for_instrument_A(fix_msg,pair_strategy_private);
                 }
-            else if(strcmp(fix_msg->ClOrdId , pair_strategy_private->active_order[ORDER_B].ClOrdId) == 0)
+            else if(strcmp((char*)fix_msg->ClOrdId , (char*)pair_strategy_private->active_order[ORDER_B].ClOrdId) == 0)
                 {
                 __stn_hft_pair_process_ER_for_instrument_B(fix_msg,pair_strategy_private);
                 }
@@ -1714,7 +1586,7 @@ int  __stn_hft_pair_process_ER(struct stn_hft_pair_decode_fix_msg_s*fix_msg,stru
         }
 
         WRITE_PAIR_LOG("Leaving __stn_hft_pair_process_ER");
-        return 0;
+        return STN_ERRNO_SUCCESS;
 
 }
 
@@ -1725,9 +1597,6 @@ void* __stn_hft_pair_strategy_thr_run (void* hdl)
     struct stn_hft_pair_strategy_attrib_priavte_s *pair_strategy_private = 
                                             (struct stn_hft_pair_strategy_attrib_priavte_s*)hdl;
 
-    unsigned char* msg;
-    int  msg_len;
-    int err,iReturn;
     int thread_decoding_count = 0;
 
     struct stn_hft_pair_strategy_attrib_s* pair_g = &pair_strategy_private->pair_public;
@@ -1740,7 +1609,6 @@ void* __stn_hft_pair_strategy_thr_run (void* hdl)
 
     // first initiate the order, based on stategy portfolio logic, then go back to the decoding stage.
     
-    struct stn_hft_pair_active_orders_s* active_order = 0;
 
     while(pair_strategy_private->quit == QUIT_RUN)
         {

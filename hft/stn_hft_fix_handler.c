@@ -25,12 +25,13 @@ mt          02/25/2014          inits rev
 #include "stn_hft_constants.h"
 #include "stn_hft_fix_op_public.h"
 #include "stn_hft_fix_op_private.h"
-#include "stn_list_macros.h"
+//#include "stn_list_macros.h"
 #include "stn_hft_rng_buf_cmn.h"
 
 #include "stn_numa_impl.h"
 
 #include "stn_hft_pair_strategy_private.h"
+#include "stn_hft_fix_decode.h"
 #include "stn_sdk_version.h"
 
 int __stn_hft_fix_skip_next_value(uint8_t* pkt,
@@ -173,29 +174,26 @@ int __stn_hft_fix_get_next_value_as_unsigned_int(uint8_t* pkt,
 
 
 
+
 /*
-__stn_hft_pair_decode_fix_msg : FIX protocol decoding function.
+STN HFT Decoding function for the order op core socket : processes the incoming messages from server and then dispatches it to its call back from 
+the message processing threads.
 */
-int __stn_hft_pair_decode_fix_msg(uint8_t* msg,
-                                        int msg_len, 
-                                        struct stn_hft_pair_decode_fix_msg_s* fix_msg)
+int __stn_hft_decode_fix_msg(char* msg, int msg_len, STN_HFT_FIX_DECODED_MSG* fix_decoded_msg)
 {
+
     int i = 0;
     int parsed_byte = 0;
     unsigned int uTag = 0;
-    unsigned int szValueCount = 0;
-    unsigned char supported_tag = FIX_HFT_PAIR_MAX_SUPPORTED_FIELD;
-
-    WRITE_PAIR_LOG("Entering __stn_hft_pair_decode_fix_msg");
-        
+    int szValueCount = 0;
+   
     
-    for (;i<msg_len && supported_tag > 0;)
+    for (;i<msg_len ;)
         {
 
-            parsed_byte = __stn_hft_fix_get_next_tag(msg+i,msg_len-i,msg+msg_len,&uTag);
+            parsed_byte = __stn_hft_fix_get_next_tag((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len),&uTag);
             if(parsed_byte == FIX_PARSING_ERROR)
                 {
-                WRITE_PAIR_LOG("Leaving __stn_hft_pair_decode_fix_msg FIX_PARSING_ERROR@tag");
                 return parsed_byte;
                 }
             
@@ -203,86 +201,139 @@ int __stn_hft_pair_decode_fix_msg(uint8_t* msg,
             switch(uTag)
                 {
                 case TAG_FIX_MsgType:
-                    {
-                    parsed_byte =__stn_hft_fix_get_next_value_as_char(msg+i,msg_len-i,msg+msg_len,&fix_msg->MsgType);
-                    if(parsed_byte == FIX_PARSING_ERROR)
-                        {
-                        return FIX_PARSING_ERROR;
-                        }
-
-                    if(fix_msg->MsgType != FIX_MsgType_ExecutionReport)
-                        {
-                        return STN_ERRNO_SUCCESS;
-                        }
-                    supported_tag--;
-                    }
+                    parsed_byte =__stn_hft_fix_get_next_value_as_char((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len),(unsigned char*)(&fix_decoded_msg->msg_type));
                     break;
+					
                 case TAG_FIX_ClOrdId:
-                    szValueCount = sizeof(fix_msg->ClOrdId);
-                    parsed_byte = __stn_hft_fix_get_next_value_as_string(msg+i,
-                        msg_len-i,msg+msg_len, &fix_msg->ClOrdId[0],&szValueCount);
-                    supported_tag--;
+                    szValueCount = sizeof(fix_decoded_msg->ClOrdId);
+                    parsed_byte = __stn_hft_fix_get_next_value_as_string((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len), (unsigned char*)(&fix_decoded_msg->ClOrdId[0]),&szValueCount);
                     break;
+					
                 case TAG_FIX_OrdId:
-                    szValueCount = sizeof(fix_msg->OrdId);
-                    parsed_byte = __stn_hft_fix_get_next_value_as_string(msg+i,msg_len-i,msg+msg_len,
-                                                                    &fix_msg->OrdId[0],&szValueCount);
-                    supported_tag--;
+                    szValueCount = sizeof(fix_decoded_msg->OrdId);
+                    parsed_byte = __stn_hft_fix_get_next_value_as_string((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len), (unsigned char*)(&fix_decoded_msg->OrdId[0]),&szValueCount);
                     break;
+					
                 case TAG_FIX_InstrumentCode:                    
-                    szValueCount = sizeof(fix_msg->InstrumentCode);
-                    parsed_byte = __stn_hft_fix_get_next_value_as_string(msg+i,msg_len-i,msg+msg_len,
-                                                                    &fix_msg->InstrumentCode[0],&szValueCount);
-                    supported_tag--;
+                    szValueCount = sizeof(fix_decoded_msg->InstrumentCode);
+                    parsed_byte = __stn_hft_fix_get_next_value_as_string((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len),(unsigned char*)(&fix_decoded_msg->InstrumentCode[0]),&szValueCount);
                     break;
-                case TAG_FIX_Price:
-                    supported_tag--;
+
+				case TAG_FIX_Price:
                     break;
-                case TAG_FIX_OrderQty:
-                    parsed_byte = __stn_hft_fix_get_next_value_as_unsigned_int( msg+i,msg_len-i,msg+msg_len,
-                        &fix_msg->Ordqty);
-                    supported_tag--;
+
+				case TAG_FIX_OrderQty:
+                    parsed_byte = __stn_hft_fix_get_next_value_as_unsigned_int( (unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len),(unsigned int*)(&fix_decoded_msg->OrdQty));
                     break;
-                case TAG_FIX_OrdStatus:
-                    parsed_byte =__stn_hft_fix_get_next_value_as_char(msg+i,msg_len-i,msg+msg_len,
-                                                                    &fix_msg->OrdStatus);
-                    if(parsed_byte == FIX_PARSING_ERROR)
-                        {
-                        return FIX_PARSING_ERROR;
-                        }
-                    supported_tag--;
+
+				case TAG_FIX_OrdStatus:
+                    parsed_byte =__stn_hft_fix_get_next_value_as_char((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len), (unsigned char*)(&fix_decoded_msg->OrdStatus));
                     break;
-                case TAG_FIX_ExecType:
-                    parsed_byte =__stn_hft_fix_get_next_value_as_char(msg+i,msg_len-i,msg+msg_len,
-                                                                    &fix_msg->ExecType);
-                    if(parsed_byte == FIX_PARSING_ERROR)
-                        {
-                        return FIX_PARSING_ERROR;
-                        }
-                    supported_tag--;
-                    break;
-                case TAG_FIX_60_MsgCreationTime:
+
+				case TAG_FIX_ExecType:
+                    parsed_byte =__stn_hft_fix_get_next_value_as_char((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len), (unsigned char*)(&fix_decoded_msg->ExecType));
+					break;
+					
+				case TAG_FIX_60_MsgCreationTime:
                     
-                    szValueCount = sizeof(fix_msg->tag60);
-                    parsed_byte = __stn_hft_fix_get_next_value_as_string(msg+i,msg_len-i,msg+msg_len,
-                                                                    &fix_msg->tag60[0],&szValueCount);
-                    supported_tag--;
+                    szValueCount = sizeof(fix_decoded_msg->tag60CreationTime);
+                    parsed_byte = __stn_hft_fix_get_next_value_as_string((unsigned char*)(msg+i),msg_len-i,(unsigned char*)(msg+msg_len), (unsigned char*)(&fix_decoded_msg->tag60CreationTime[0]),&szValueCount);
                     break;
+					
                 default:
-                    parsed_byte = __stn_hft_fix_skip_next_value(msg+i, msg_len-i,msg+msg_len);
+                    parsed_byte = __stn_hft_fix_skip_next_value((unsigned char*)(msg+i), msg_len-i,(unsigned char*)(msg+msg_len));
+					break;
+					
                 }
+
             if(parsed_byte == FIX_PARSING_ERROR)
                 {
-                WRITE_PAIR_LOG("Leaving __stn_hft_pair_decode_fix_msg @after check");
                 return parsed_byte;
                 }
 
             i+=parsed_byte;
         }
 
-    WRITE_PAIR_LOG("Leaving __stn_hft_pair_decode_fix_msg :%s",fix_msg->ClOrdId);
         
     return STN_ERRNO_SUCCESS;
+}
+
+
+
+// regular fix decode parsing.
+void* stn_hft_fix_decode_message_thread(void* hdl)
+{
+    struct _stn_hft_FIX_op_channel_handle_private_s* fix_private_hdl = (struct _stn_hft_FIX_op_channel_handle_private_s*)hdl;
+	STN_HFT_FIX_MSG_DECODE_CALLBACK *pMsgCallback = (STN_HFT_FIX_MSG_DECODE_CALLBACK *)fix_private_hdl->fix_decode_msg_callback;
+
+    int err;
+	unsigned int msg_len;
+    unsigned char* msg = 0;
+	
+    int iReturn = 0;
+
+	STN_HFT_FIX_DECODED_MSG fix_decoded_msg;
+
+    // check if FIX recv channel is terminated, then we have nothing to do up here.
+    while(fix_private_hdl->quit == 0)
+        {
+        err = stn_hft_FIX_op_channel_get_next_msg(fix_private_hdl,&msg,&msg_len);
+        if(STN_ERRNO_SUCCESS == err)
+            {
+            
+            memset(&fix_decoded_msg,0,sizeof(fix_decoded_msg));
+
+            __stn_hft_decode_fix_msg((char*)msg,msg_len,&fix_decoded_msg);
+			  
+			if(pMsgCallback)
+			  	iReturn = (*pMsgCallback)(&fix_private_hdl->FIX_op_channel_public_attribs,&fix_decoded_msg,(char*)msg,msg_len);
+
+			if(iReturn != STN_ERRNO_SUCCESS)
+			  	{
+			  	// log this stage and break out.
+			  	break;
+			  	}
+            }
+        else if(STN_ERRNO_FAIL == err || STN_ERRNO_MALLOC_FAIL == err)
+        	{
+        	// log this state and break out
+            break;
+        	}
+        
+        }
+	return 0;
+}
+
+
+
+// initiate a fix message processing threads.
+
+int stn_hft_FIX_initiate_message_decode(void * pax_hft_FIX_op_channel_handle,STN_HFT_FIX_MSG_DECODE_CALLBACK pMsgCallBack)
+{
+    struct _stn_hft_FIX_op_channel_handle_private_s* fix_private_hdl = (struct _stn_hft_FIX_op_channel_handle_private_s*)pax_hft_FIX_op_channel_handle;
+
+	if(fix_private_hdl->fix_hft_decode_thread_hdl == 0)
+		{
+		fix_private_hdl->fix_decode_msg_callback = pMsgCallBack;
+		pthread_create(&fix_private_hdl->fix_hft_decode_thread_hdl,NULL,stn_hft_fix_decode_message_thread,fix_private_hdl);
+		}
+
+	return STN_ERRNO_SUCCESS;
+}
+
+
+
+
+int stn_hft_FIX_terminate_message_decode(void* pax_hft_FIX_op_channel_handle)
+{
+    struct _stn_hft_FIX_op_channel_handle_private_s* fix_private_hdl = (struct _stn_hft_FIX_op_channel_handle_private_s*)pax_hft_FIX_op_channel_handle;
+
+	if(fix_private_hdl->fix_hft_decode_thread_hdl)
+		pthread_cancel(fix_private_hdl->fix_hft_decode_thread_hdl);
+	
+	fix_private_hdl->fix_hft_decode_thread_hdl = 0;
+	return STN_ERRNO_SUCCESS;
+
 }
 
 

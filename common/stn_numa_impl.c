@@ -4,12 +4,12 @@
 #include <sys/mman.h>
 #include <sched.h>
 #include <unistd.h>
-#include <sched.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sched.h>
 
 #include "stn_numa_impl.h"
 #include "console_log.h"

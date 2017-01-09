@@ -14,7 +14,6 @@
 #include "stn_numa_impl.h"
 #include "stn_sdk_version.h"
 #include <time.h>
-#include "stn_hft_fix_msgs.h"
 #include "stn_hft_fix_order_db.h"
 #include "Stn_errno.h"
 

@@ -30,6 +30,7 @@
 #define ORDER_CANCEL_MSG_TYPE   'F'
 #define ORDER_REPLACE_MSG_TYPE  'G'
 #define FIX_HEARTBEAT_MSG_TYPE 	'0'
+#define FIX_TRADING_STATUS_REQUEST_MSG_TYPE 'g'
 #define FIX_MSG_OFFSET           128
 #define FIX_MSG_SIZE             4096
 #define FIX_BUFF_SIZE            FIX_MSG_SIZE-FIX_MSG_OFFSET
@@ -78,8 +79,10 @@ struct _stn_hft_FIX_op_channel_handle_private_s {
 	int file_header_logged; // indicates if the CSV file header has been logged
 	unsigned long time_outs;
 	int8_t	logged_in; 
-
+	
 	pthread_t	fix_pair_strategy_master_thr_hdl;
+	pthread_t	fix_hft_decode_thread_hdl;
+	void*		fix_decode_msg_callback; // a decode function callback from the decode thread.
 
 };
 
@@ -98,6 +101,14 @@ int __stn_hft_FIX_clone_chnl_get_next_msg (struct _stn_hft_FIX_op_channel_handle
 												unsigned int *msg_len);
 int stn_hft_FIX_op_channel_send_order_cancel_without_orderid (void* pax_hft_FIX_op_channel_handle, struct FIX_OC_variables_s *p_FIX_op_order_cancel_crumbs);
 int stn_hft_FIX_op_channel_send_order_replace_without_orderid (void* pax_hft_FIX_op_channel_handle, struct FIX_OR_variables_s *p_FIX_op_order_replace_crumbs);
+
+// FIX packet parsing functions.
+int __stn_hft_fix_skip_next_value(uint8_t* pkt, int visLen, uint8_t* pkt_End);
+int __stn_hft_fix_get_next_tag(uint8_t* pkt, int visLen, uint8_t* pkt_end, unsigned int* puTag);
+int __stn_hft_fix_get_next_value_as_char	(uint8_t* pkt,int visLen, uint8_t* pkt_end,	uint8_t* puByte);
+int __stn_hft_fix_get_next_value_as_string(uint8_t* pkt, int  visLen, uint8_t* pkt_end, uint8_t* pszValue,int* puSzValueCount);
+int __stn_hft_fix_get_next_value_as_unsigned_int(uint8_t* pkt, int visLen, uint8_t * pkt_end, unsigned int* puValue);
+
 
 #define WRITE_LOG(hdl,time,log_string,delta)\
 {\

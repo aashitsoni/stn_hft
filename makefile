@@ -14,6 +14,7 @@ SRC= stn_hft_mkt_data_core.c\
 	 stn_hft_pair_strategy_core.c\
 	 stn_hft_fix_msgs.c\
 	 stn_hft_fix_order_db.c\
+	 stn_hft_fix_handler.c\
 	 console_log.c
 
 ifeq ($(RLDB),Y)
@@ -47,7 +48,7 @@ LIBS=-lpthread -lrt -lnuma
 OBJS = $(patsubst %.c, $(ODIR)/%.o, $(SRC))
 
 $(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -fpic -g -Werror -o $@ $< $(CFLAGS)
+	$(CC) -c -fpic -g -Wall -o $@ $< $(CFLAGS)
 
 $(TARGETAPP): $(OBJS)
 	@echo making $(TARGETAPP) in $(TARGET) mode..

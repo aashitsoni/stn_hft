@@ -44,7 +44,7 @@ int fix_op_test_process_order_cancel(void *chnl_hdl,struct order_state_info* ord
 {
 	
 	uint8_t* msg;
-	int msg_len;
+	unsigned int msg_len;
 	int iMsg = 0;
 
 	struct FIX_OC_variables_s FIX_OC_Constants =
@@ -56,10 +56,10 @@ int fix_op_test_process_order_cancel(void *chnl_hdl,struct order_state_info* ord
 	char cxlNum[16] = "";
 	bzero(cxlNum, sizeof(cxlNum));
 	sprintf(cxlNum, "MCXSX%06d", seqNum+2);
-	strcpy(FIX_OC_Constants.tag_11_client_order_id, cxlNum);
-	strcpy(FIX_OC_Constants.tag_37_order_id, ord_info->tag37);
-	strcpy(FIX_OC_Constants.tag_41_orig_clor_id, ord_info->tag41);
-	strcpy(FIX_OC_Constants.tag_60_message_creation_time, ord_info->tag61);
+	strcpy((char*)FIX_OC_Constants.tag_11_client_order_id, cxlNum);
+	strcpy((char*)FIX_OC_Constants.tag_37_order_id, (char*)ord_info->tag37);
+	strcpy((char*)FIX_OC_Constants.tag_41_orig_clor_id, (char*)ord_info->tag41);
+	strcpy((char*)FIX_OC_Constants.tag_60_message_creation_time, (char*)ord_info->tag61);
 	
 	stn_hft_FIX_op_channel_send_order_cancel(chnl_hdl,&FIX_OC_Constants); 
 	console_log_write("%s:%d sent cxl req",__FILE__,__LINE__);

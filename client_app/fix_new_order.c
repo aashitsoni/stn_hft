@@ -40,10 +40,9 @@ mt			10/20/2016			Created
 int fix_op_test_process_order_new(void* chnl_hdl,struct order_state_info* ord_info)
 {
 	uint8_t* msg;
-	int msg_len;
+	unsigned int msg_len;
     char ordNum[16] = ""; 
 	int iMsg = STN_ERRNO_SUCCESS;
-	int j=0;
 
 	struct FIX_OE_variables_s FIX_OE_Constants =
 	{
@@ -62,10 +61,10 @@ int fix_op_test_process_order_new(void* chnl_hdl,struct order_state_info* ord_in
 	bzero(ord_info->tag61, 64);
 
 	sprintf(ordNum, "MCXSX%06d", seqNum);
-	strcpy(FIX_OE_Constants.tag_11_client_order_id, ordNum);
+	strcpy((char*)FIX_OE_Constants.tag_11_client_order_id, ordNum);
 	stn_hft_FIX_op_channel_send_order_new(chnl_hdl,&FIX_OE_Constants);
 
-	strcpy(ord_info->tag41,ordNum);
+	strcpy((char*)ord_info->tag41,ordNum);
 	
 // retrieve two message as echo server would be replying
 	sleep(3);

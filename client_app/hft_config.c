@@ -39,12 +39,10 @@ mt			10/20/2016			Created
 
 int hft_read_config_file()
 {
-	int iRet;
 	FILE* config_file = 0;
-	unsigned char txt[1028];
-	unsigned char *pRetTxt;
-	unsigned char *pszValue = 0;
-	unsigned char *pszText = NULL;
+	char txt[1028];
+	char *pszValue = 0;
+	char *pszText = NULL;
 	
 	config_file = fopen("hft_config.cfg","r");
 	if(NULL == config_file)
@@ -63,62 +61,64 @@ int hft_read_config_file()
 		if(txt[0] == '#') // ignore the comments
 			continue;
 		
-		pszValue = strchr(txt,'=');
+		pszValue = strchr((const char*)txt,'=');
 
 		if(pszValue == NULL)
 			continue;
 
 		pszValue ++; // increment for the =
 		 
-		if(strncmp(txt,"interface",9) == 0)
+		if(strncmp((const char*)txt,"interface",9) == 0)
 			pszText = g_hft_config.g_interface;
-		else if(strncmp(txt,"multicast_ip",12) == 0)
+		else if(strncmp((const char*)txt,"multicast_ip",12) == 0)
 			pszText = g_hft_config.g_multicast_ip;
-		else if(strncmp(txt,"multicast_port",14) == 0)
+		else if(strncmp((const char*)txt,"multicast_port",14) == 0)
 			pszText = g_hft_config.g_multicast_port;
-		else if(strncmp(txt,"fix_gw",6) == 0)
+		else if(strncmp((const char*)txt,"fix_gw",6) == 0)
 			pszText = g_hft_config.g_fix_gw;
-		else if(strncmp(txt,"fix_port",8) == 0)
+		else if(strncmp((const char*)txt,"fix_port",8) == 0)
 			pszText = g_hft_config.g_fix_port;
-		else if (strncmp(txt,"fix_tag_91",10) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_91",10) == 0)
 			pszText = g_hft_config.g_fix_tag_91;
-		else if (strncmp(txt,"fix_tag_96",10) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_96",10) == 0)
 			pszText = g_hft_config.g_fix_tag_96;
-		else if (strncmp(txt,"fix_tag_56",10) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_56",10) == 0)
 			pszText = g_hft_config.g_fix_tag_56;
-		else if (strncmp(txt,"fix_tag_57",10) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_57",10) == 0)
 			pszText = g_hft_config.g_fix_tag_57;
-		else if (strncmp(txt,"fix_tag_9227",12) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_9227",12) == 0)
 			pszText = g_hft_config.g_fix_tag_9227;
-		else if (strncmp(txt,"fix_tag_49",10) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_49",10) == 0)
 			pszText = g_hft_config.g_fix_tag_49;
-		else if (strncmp(txt,"instrument_A",12) == 0)
+		else if (strncmp((const char*)txt,"instrument_A",12) == 0)
 			pszText = g_hft_config.g_instrument_A;
-		else if (strncmp(txt,"instrument_B",12) == 0)
+		else if (strncmp((const char*)txt,"instrument_B",12) == 0)
 			pszText = g_hft_config.g_instrument_B;
-		else if (strncmp(txt,"password",8) == 0)
+		else if (strncmp((const char*)txt,"password",8) == 0)
 			pszText = g_hft_config.g_fix_tag_554;
-		else if (strncmp(txt,"new_password",12) == 0)
+		else if (strncmp((const char*)txt,"new_password",12) == 0)
 			pszText = g_hft_config.g_fix_tag_925;
-		else if (strncmp(txt,"fix_tag_108",11) == 0)
+		else if (strncmp((const char*)txt,"fix_tag_108",11) == 0)
 			pszText = g_hft_config.g_fix_tag_108;
 		else
 			pszText = NULL;
 		
 		if(pszText != NULL)
 			{
-			int len = 0;
-			strcpy(pszText,pszValue);
-			len = strlen(pszText);
+			int len = 0; 
+			strcpy((char*)pszText,(const char*)pszValue);
+			len = strlen((const char*)pszText);
 			pszText[len-1] = 0; // set the null for last \n character
 			}
 		
 		}
+	return 0;
 	
 }
 
 int hft_print_config()
 {
+	return 0;
 }
 
 

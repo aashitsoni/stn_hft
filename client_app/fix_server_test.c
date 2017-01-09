@@ -25,6 +25,7 @@ mt 			10/19/2016          client application changes for the login tests.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 
 #include "stn_errno.h"
@@ -44,6 +45,7 @@ int g_heartbeatInt = 50;// seconds
 HFT_CONFIG_T g_hft_config;
 int g_logged_in;
 pthread_t 	g_hb_thread = NULL;
+STN_FIX_CLIENT_APP_STATE_E g_stn_fix_client_app_state_e = STN_FIX_CLIENT_INITIATED_STATE;
 
 
 
@@ -59,35 +61,22 @@ __inline__ uint64_t rdtsc_lcl(void) {
     return (uint64_t)hi << 32 | lo;
 }
 
-int hft_client_fix_msg_processing_thread(void* hdl)
-{
-	char msg[4000];
-	int msg_len=0;
-	int iRet = 0;
-	while(bAppRunning == 1)
-	{
-		iRet = stn_hft_FIX_op_channel_get_next_msg,&msg,&msg_len);
-		if(iRet == STN_ERRNO_SUCCESS)
-			{
-			// process fix message
-			hft_client_decode_fix_message(hdl,msg,msg_len);
-			
-			}
-		else if(iRet != STN_ERRNO_NODATARECV) // some error
-			break;
-	}
-}
 
-int hft_client_fix_heartbeat_thread (void* hdl)
+
+
+void* hft_client_fix_heartbeat_thread (void* hdl)
 {
 	while(bAppRunning == 1)
 		{
-		sleep(g_heartbitInt);//sleep for 30 seconds
+		sleep(g_heartbeatInt);//sleep for 30 seconds
 		stn_hft_FIX_op_channel_send_hb(hdl);
 		}
 
-	
+	return 0;
 }
+
+
+
 
 int print_stn_fix_client_header(int logged_in)
 {
@@ -134,9 +123,16 @@ int process_for_logged_out_screen(void *chnl_hdl)
 			else if(STN_ERRNO_SUCCESS == iRet)
 				{
 				g_logged_in = 1;// successfully logged into the server
+				g_stn_fix_client_app_state_e = STN_FIX_CLIENT_LOGGED_IN_STATE; // set the state of the client into the loggedin to the server.
+
 				// create message recieve threads only after successful login
-				pthread_create(&g_fix_msg_recv_thread,NULL,hft_client_fix_msg_processing_thread,chnl_hdl);
-				
+				stn_hft_FIX_initiate_message_decode(chnl_hdl,&hft_client_decode_fix_message_callback);
+
+				// immidiately send trading status request so that we can start order entry processing.
+				stn_hft_FIX_op_channel_send_trading_status_request(chnl_hdl);
+
+
+				// now create heartbeat thread 
 				pthread_create(&g_hb_thread, NULL, hft_client_fix_heartbeat_thread,chnl_hdl);
 				}
 			}
@@ -196,6 +192,7 @@ int process_for_logged_in_screen(void *chnl_hdl)
 			break;
 			
 		case 12:
+			// send a log out and then go off from here.
 			// exit the application. make sure you logoff before you exit
 			return -1;
 			
@@ -210,12 +207,8 @@ int hft_client_fix_process(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uin
 {
 	struct stn_hft_FIX_op_channel_public_attrib_s FIX_op_chnl_attrb ;
 	void 	*chnl_hdl;
-	uint8_t	*msg;
-	int 	msg_len;
-    int 	overall_loop = 1;
 	int 	iMsg = 0;
-	struct order_state_info ord_info;
-	
+	void* thread_return = NULL;
 	int user_input = 0;
 
 	
@@ -230,7 +223,7 @@ int hft_client_fix_process(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uin
 		.tag_34_msg_seq_num=1,
 	};
 	
-	strcpy(FIX_session_constants.tag_8_FIXString, "FIX.4.2");
+	strcpy((char*)FIX_session_constants.tag_8_FIXString, "FIX.4.2");
 
 
 	console_log_write("%s:%d configuration details ...\ninterface: %s\n",__FILE__,__LINE__,hw_iface_ip);
@@ -238,26 +231,26 @@ int hft_client_fix_process(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uin
 	console_log_write("FIX port: %u\n",exchg_port);
 	
 	//Proficient specific values:
-	bzero(FIX_session_constants.tag_91_encrpted_digest,sizeof(FIX_session_constants.tag_91_encrpted_digest));
-	strcpy(FIX_session_constants.tag_91_encrpted_digest, g_hft_config.g_fix_tag_91);
-	strcpy(FIX_session_constants.tag_96_raw_data, g_hft_config.g_fix_tag_96);
-	strcpy(FIX_session_constants.tag_49_sender_comp_id, g_hft_config.g_fix_tag_49);
+	bzero((char*)FIX_session_constants.tag_91_encrpted_digest,sizeof(FIX_session_constants.tag_91_encrpted_digest));
+	strcpy((char*)FIX_session_constants.tag_91_encrpted_digest, g_hft_config.g_fix_tag_91);
+	strcpy((char*)FIX_session_constants.tag_96_raw_data, g_hft_config.g_fix_tag_96);
+	strcpy((char*)FIX_session_constants.tag_49_sender_comp_id, g_hft_config.g_fix_tag_49);
 	// fix up the length field
-	FIX_session_constants.tag_95_raw_data_length = strlen(FIX_session_constants.tag_96_raw_data);
-	FIX_session_constants.tag_90_encrptd_digest_length = strlen(FIX_session_constants.tag_91_encrpted_digest);
+	FIX_session_constants.tag_95_raw_data_length = strlen((const char*)FIX_session_constants.tag_96_raw_data);
+	FIX_session_constants.tag_90_encrptd_digest_length = strlen((const char*)FIX_session_constants.tag_91_encrpted_digest);
 
-	strcpy(FIX_session_constants.tag_56_target_comp_id, g_hft_config.g_fix_tag_56);
-	strcpy(FIX_session_constants.tag_57_target_comp_sub_id , g_hft_config.g_fix_tag_57);
-	strcpy(FIX_session_constants.mcx_tag_9227_terminal_info, g_hft_config.g_fix_tag_9227);
-	strcpy(FIX_session_constants.tag_554_password,g_hft_config.g_fix_tag_554);
-	strcpy(FIX_session_constants.tag_925_newpassword,g_hft_config.g_fix_tag_925);
+	strcpy((char*)FIX_session_constants.tag_56_target_comp_id, g_hft_config.g_fix_tag_56);
+	strcpy((char*)FIX_session_constants.tag_57_target_comp_sub_id , g_hft_config.g_fix_tag_57);
+	strcpy((char*)FIX_session_constants.mcx_tag_9227_terminal_info, g_hft_config.g_fix_tag_9227);
+	strcpy((char*)FIX_session_constants.tag_554_password,g_hft_config.g_fix_tag_554);
+	strcpy((char*)FIX_session_constants.tag_925_newpassword,g_hft_config.g_fix_tag_925);
 	
 	
 
 	// SETUP the attribs for this channel
-	strcpy(FIX_op_chnl_attrb.FIX_gway_addr,exchg_FIX_gway_ip);
+	strcpy((char*)FIX_op_chnl_attrb.FIX_gway_addr,(char*)exchg_FIX_gway_ip);
 	FIX_op_chnl_attrb.FIX_gway_port = exchg_port;
-	strcpy(FIX_op_chnl_attrb.local_interface_ip,hw_iface_ip);
+	strcpy((char*)FIX_op_chnl_attrb.local_interface_ip,(char*)hw_iface_ip);
 	FIX_op_chnl_attrb.recv_cpu_id = 0;
 	FIX_op_chnl_attrb.log_stats_flag = 1; // make sure if you want to log the events
 	FIX_op_chnl_attrb.fix_op_chnl_generic_bfrs_needed = 2;
@@ -300,7 +293,9 @@ int hft_client_fix_process(uint8_t* hw_iface_ip, uint8_t* exchg_FIX_gway_ip, uin
 	console_log_write("%s:%d deleting channel and cleaning up resources please wait...\n",__FILE__,__LINE__);
 	stn_hft_FIX_op_channel_delete(chnl_hdl);
 	if(g_logged_in)
-		pthread_join(g_hb_thread);
+		pthread_join(g_hb_thread,&thread_return);
+
+	return 0;
 }
 
 
@@ -323,12 +318,7 @@ void sig_handler(int signum)
 // - - - - - - - - - - - - - - - - 
 int main (int argc, char** argv)
 {
-	int ret =0, pme_type = -1, nic_series = -1;
-	char eth_interface [256] = {0};
-	int c, ops =-1;
-	uint8_t exchg_mcast_ip [16] = {0}, hw_iface_ip[16] = {0}, exchg_FIX_gway_ip[16] = {0};;
 	uint16_t exchg_fix_port = 0;
-	uint16_t exchg_mcast_port = 0;
 	int ans = 0;
 
 	console_log_open();
@@ -359,9 +349,9 @@ int main (int argc, char** argv)
 	signal(SIGINT,sig_handler);
 
 	exchg_fix_port = atoi(g_hft_config.g_fix_port);
-	exchg_mcast_port = atoi(g_hft_config.g_multicast_port);
+//	exchg_mcast_port = atoi(g_hft_config.g_multicast_port);
 	
-	hft_client_fix_process(g_hft_config.g_interface, g_hft_config.g_fix_gw, exchg_fix_port);	// -i 192.168.1.34  -g 192.168.1.230 -p 2002 -o 2
+	hft_client_fix_process((uint8_t*)g_hft_config.g_interface, (uint8_t*)g_hft_config.g_fix_gw, exchg_fix_port);	// -i 192.168.1.34  -g 192.168.1.230 -p 2002 -o 2
 	
 	console_log_close();
 	

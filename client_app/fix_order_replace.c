@@ -43,7 +43,7 @@ mt			10/20/2016			Created
 int fix_op_test_process_order_replace(void* chnl_hdl,struct order_state_info* ord_info)
 {
 	uint8_t* msg;
-	int msg_len;
+	unsigned int msg_len;
  	int iMsg = 0;
 
 	struct FIX_OR_variables_s FIX_OR_Constants =
@@ -71,12 +71,12 @@ int fix_op_test_process_order_replace(void* chnl_hdl,struct order_state_info* or
 	bzero(rplNum, sizeof(rplNum));
 				sprintf(rplNum, "MCXSX%06d", seqNum+1);
 				
-	strcpy(FIX_OR_Constants.tag_11_client_order_id, rplNum);
-	strcpy(FIX_OR_Constants.tag_37_order_id, ord_info->tag37);
-	strcpy(FIX_OR_Constants.tag_41_orig_clor_id, ord_info->tag41);
+	strcpy((char*)FIX_OR_Constants.tag_11_client_order_id, rplNum);
+	strcpy((char*)FIX_OR_Constants.tag_37_order_id, (char*)ord_info->tag37);
+	strcpy((char*)FIX_OR_Constants.tag_41_orig_clor_id, (char*)ord_info->tag41);
 	console_log_write("%s:%d setting transTime=%s\n",__FILE__,__LINE__, ord_info->tag61);
 	fflush(stdout);
-	strcpy(FIX_OR_Constants.tag_60_message_creation_time, ord_info->tag61);
+	strcpy((char*)FIX_OR_Constants.tag_60_message_creation_time,(char*) ord_info->tag61);
 	console_log_write("%s:%d set transTime=%s\n", __FILE__,__LINE__,ord_info->tag61);
 	fflush(stdout);
 	stn_hft_FIX_op_channel_send_order_replace(chnl_hdl,&FIX_OR_Constants);
@@ -85,7 +85,7 @@ int fix_op_test_process_order_replace(void* chnl_hdl,struct order_state_info* or
 	// retrieve two message as echo server would be replying
 	sleep(2);
 	// assign it back from the replace order number
-	strcpy(ord_info->tag41,rplNum);
+	strcpy((char*)ord_info->tag41,rplNum);
 	
 	
 	iMsg= stn_hft_FIX_op_channel_get_next_msg(chnl_hdl,&msg,&msg_len);

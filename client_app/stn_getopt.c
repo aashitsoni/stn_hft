@@ -7,6 +7,7 @@
 #define	ENDARGS  "--"
 
 /* this is included because index is not on some UNIX systems */
+/*
 static
 char *
 index (s, c)
@@ -18,6 +19,7 @@ register	int 	c;
 		else s++;
 	return (NULL);
 	}
+*/	
 
 /*
  * get option letter from argument vector

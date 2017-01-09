@@ -15,6 +15,9 @@ mt			10/20/2016			Created
 #ifndef _FIX_SERVER_TEST_H_
 #define _FIX_SERVER_TEST_H_
 
+#include "stn_hft_fix_decode.h"
+
+
 struct order_state_info
 {
 	uint8_t tag37[64]; // exchange order number
@@ -46,6 +49,16 @@ instrument_A=9123456
 instrument_B=9324399
 
 */
+
+
+typedef enum stn_fix_client_app_state_e
+{
+	STN_FIX_CLIENT_INITIATED_STATE,
+	STN_FIX_CLIENT_LOGGED_IN_STATE,
+	STN_FIX_CLIENT_DOWNLOAD_STATE,
+	STN_FIX_CLIENT_TRADING_STATE,
+	STN_FIX_CLIENT_LOGGED_OFF_STATE,
+}STN_FIX_CLIENT_APP_STATE_E;
 
 typedef struct hft_config_s
 {
@@ -98,6 +111,7 @@ int hft_print_config();
 int fix_op_test_process_order_new(void* chnl_hdl,struct order_state_info* ord_info);
 int fix_op_test_process_order_replace(void* chnl_hdl,struct order_state_info* ord_info);
 int fix_op_test_process_order_cancel(void *chnl_hdl,struct order_state_info* ord_info);
+int hft_client_decode_fix_message_callback(void* hdl,STN_HFT_FIX_DECODED_MSG* msg,char* pkt, int msg_len);
 
 
 

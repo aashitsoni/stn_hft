@@ -1,10 +1,11 @@
 
 #include <stdio.h>
-//#include <curses.h>
-//#include <term.h>
-
 #include <sys/mman.h>
 #include <numa.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <pthread.h>
+
 
 
 #include "stn_errno.h"
@@ -18,7 +19,7 @@
 
 //----- fwd decls..
 
-int __stn_hft_mkt_data_channel_thr_run (void* hdl);
+void* __stn_hft_mkt_data_channel_thr_run (void* hdl);
 
 //----------------------
 
@@ -103,7 +104,6 @@ int stn_hft_mkt_data_channel_tcp_create (struct stn_hft_mkt_channel_public_s* mk
 										 void** opaque_hdl)
 {
 	struct _stn_hft_mkt_channel_handle_private_s *_mkt_chnl_hdl_private =0;
-	char llm_flag = 1;
 
 	if (STN_ERRNO_SUCCESS != __stn_hft_mkt_data_channel_init_common(mkt_chnl_public,&_mkt_chnl_hdl_private))
 		return STN_ERRNO_HFT_MKT_CHNL_INIT_FAIL;
@@ -134,7 +134,7 @@ int stn_hft_mkt_data_channel_tcp_create (struct stn_hft_mkt_channel_public_s* mk
 	memset((char *) &(_mkt_chnl_hdl_private->svr_addr), 0, sizeof(_mkt_chnl_hdl_private->svr_addr));
 	_mkt_chnl_hdl_private->svr_addr.sin_family = AF_INET;
 	_mkt_chnl_hdl_private->svr_addr.sin_port = htons(mkt_chnl_public->mkt_data_port);
-	_mkt_chnl_hdl_private->svr_addr.sin_addr.s_addr = inet_addr(mkt_chnl_public->mkt_data_addr);;
+	_mkt_chnl_hdl_private->svr_addr.sin_addr.s_addr = inet_addr((const char*)mkt_chnl_public->mkt_data_addr);;
 
 	if (connect(_mkt_chnl_hdl_private->sd, (struct sockaddr*)&(_mkt_chnl_hdl_private->svr_addr), sizeof(_mkt_chnl_hdl_private->svr_addr)) < 0)
 	{
@@ -217,8 +217,8 @@ int stn_hft_mkt_data_channel_mcast_create (struct stn_hft_mkt_channel_public_s* 
 	   which the multicast datagrams are to be received. 
 	*/
 	//_mkt_chnl_hdl_private->mc_group.imr_interface.s_addr = htonl(INADDR_ANY);//inet_addr(mkt_chnl->local_interface_ip);
-	_mkt_chnl_hdl_private->mc_group.imr_interface.s_addr = inet_addr(mkt_chnl_public->local_interface_ip);
-	_mkt_chnl_hdl_private->mc_group.imr_multiaddr.s_addr = inet_addr(mkt_chnl_public->mkt_data_addr);
+	_mkt_chnl_hdl_private->mc_group.imr_interface.s_addr = inet_addr((const char*)mkt_chnl_public->local_interface_ip);
+	_mkt_chnl_hdl_private->mc_group.imr_multiaddr.s_addr = inet_addr((const char*)mkt_chnl_public->mkt_data_addr);
 	
 	if(setsockopt(_mkt_chnl_hdl_private->sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void *)&(_mkt_chnl_hdl_private->mc_group), sizeof(_mkt_chnl_hdl_private->mc_group)) < 0)
 	{
@@ -272,6 +272,7 @@ int stn_hft_mkt_data_channel_start (void* hdl)
 	console_log_write ("%s:%d starting hardware mkt channel. posting h/w signal..\n",__FILE__,__LINE__);
 
 	sem_post(&(_mkt_chnl_hdl->start_mkt_data_sema));
+	return STN_ERRNO_SUCCESS;
 }
 
 
@@ -308,16 +309,16 @@ int stn_hft_mkt_data_channel_get_next_msg(void* hdl,unsigned char** pkt, unsigne
 
 
 
-int __stn_hft_mkt_data_channel_thr_run (void* hdl)
+void* __stn_hft_mkt_data_channel_thr_run (void* hdl)
 {
 	struct _stn_hft_mkt_channel_handle_private_s *_mkt_chnl_hdl = (struct _stn_hft_mkt_channel_handle_private_s *)hdl;
 	fd_set read_set;
-	struct timeval wait_time,start_time,end_time; 
+//	struct timeval wait_time,start_time,end_time; 
 	struct sockaddr_in source_address;	// Get a local address to capture the source of the messages... with m'cast the source would be any upstream m'cast DR
 	int msg_bf_sz = STN_HFT_CHNL_MSG_SIZE_MAX;
-	int msg_bytes_read = 0, rval =0;
-	int source_addr_sz = sizeof(source_address);
-	unsigned long time_outs =0;
+	//int msg_bytes_read = 0, rval =0;
+	socklen_t source_addr_sz = sizeof(source_address);
+	//unsigned long time_outs =0;
 
 	unsigned char msg_buff[STN_HFT_CHNL_MSG_SIZE_MAX];
 
@@ -364,9 +365,9 @@ int __stn_hft_mkt_data_channel_thr_run (void* hdl)
 			- SETUP the wait time for the poll on the socket 
 			- This should be changed in the BUSY WAIT driver implementations
 		*/
-		wait_time.tv_sec  = 0;   
+/*		wait_time.tv_sec  = 0;   
 		wait_time.tv_usec = STN_HFT_SOCKET_SELECT_WAIT_TIME_USEC;
-
+*/
 #ifdef _OLD_IMPLEMENT	
 		rval = select(_mkt_chnl_hdl->sd, &read_set , NULL, NULL, &wait_time);
 	        
@@ -439,6 +440,8 @@ int __stn_hft_mkt_data_channel_thr_run (void* hdl)
 						_mkt_chnl_hdl->mkt_channel_public.mkt_data_port,
 						_mkt_chnl_hdl->mkt_chnl_rng_buf_write_index,
 						_mkt_chnl_hdl->mkt_channel_public.msg_drop_count);
+
+		return NULL;
 		
 						
 }
@@ -483,6 +486,7 @@ int stn_hft_mkt_data_channel_delete (void* hdl)
 	close(_mkt_chnl_hdl->sd);
 	free (_mkt_chnl_hdl->chnnl_stats_blob);
 	free (_mkt_chnl_hdl);
+	return STN_ERRNO_SUCCESS;
 }
 
 

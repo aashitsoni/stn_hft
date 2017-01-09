@@ -7,6 +7,7 @@
 *******************************************************************************************************************/
 #include <sys/mman.h>
 #include <numa.h>
+#include <unistd.h>
 
 #include "stn_hft_fix_op_private.h"
 #include "stn_numa_impl.h"
@@ -114,14 +115,13 @@ return values:
 int stn_hft_FIX_op_channel_format_msg(char* fix_msg,int msg_length,size_t buf_size,char* tmpBuff)
 {
     char checksum[10] ;
-	char* str = NULL;
 
     CALC_MSG_LENGTH(msg_length);
     // FIX the 1 less message length issue, but still we need to fix up 
     // computation problem may be.
     msg_length = snprintf(tmpBuff,buf_size,fix_msg,msg_length+1);
-    str = stn_hft_FIX_message_compute_checksum(tmpBuff,msg_length,checksum);
-    msg_length = snprintf(fix_msg,buf_size,FIX_4_2_CheckSumTemplate,
+    stn_hft_FIX_message_compute_checksum(tmpBuff,msg_length,checksum);
+    msg_length = snprintf(fix_msg,buf_size,(char*)FIX_4_2_CheckSumTemplate,
                                             tmpBuff,            // message to send
                                             checksum,0x01);     // pad checksum
     return msg_length;
@@ -150,7 +150,7 @@ int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle,unsigned
     char checksum[10],time_str_lcl[20] = "\0";// this shall not be more than 20 bytes
     uint16_t len_msg_header = 0,fix_msg_length = 0,total_fix_msg_len = 0;
     uint16_t buff_len = 0;
-    unsigned long rt;
+    unsigned long long rt;
 
 
     // check the message length passed to the function so that we dont run over the buffer 
@@ -179,7 +179,7 @@ int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle,unsigned
     // change the message buffer to the reserver aread where we have bytes we can use to format the message
     msg = fix_msg - len_msg_header; // 1 byte extra to accomodate null character, which will be overwritten by 0x01 later on.
 
-    buff_len = sprintf(msg, FIX_4_2_Generic_Msg_Template,
+    buff_len = sprintf((char*)msg, (char*)FIX_4_2_Generic_Msg_Template,
                         0x01,
                         fix_msg_length,0x01,
                         msg_type,0x01,
@@ -194,11 +194,11 @@ int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle,unsigned
 
     total_fix_msg_len = len_msg_header + msg_size;//account for the 0x01 added up
 
-    stn_hft_FIX_message_compute_checksum(msg,total_fix_msg_len,checksum);
+    stn_hft_FIX_message_compute_checksum((char*)msg,total_fix_msg_len,checksum);
 	
     total_fix_msg_len +=  sprintf((char*)&fix_msg[msg_size],"10=%s%c", checksum,0x01);     // pad checksum
 
-    WRITE_LOG(FIX_op_hdl_private,time_str,msg,0);
+    WRITE_LOG(FIX_op_hdl_private,time_str,msg,(unsigned long long)0);
 	
 	rt = rdtsc();
     console_log_write("%s:%d Send out: %llu\n",__FILE__,__LINE__,rt);
@@ -215,7 +215,8 @@ int stn_hft_FIX_op_send_generic_msg(void* pax_hft_FIX_op_channel_handle,unsigned
 
 int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 {
-	int iMsg = 0,msg_len = 0;
+	int iMsg = 0;
+	unsigned int msg_len = 0;
 	uint8_t* msg;
 	struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
 	
@@ -228,13 +229,13 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 		if( STN_ERRNO_SUCCESS == iMsg)
 		{
 			console_log_write("%s:%d stn_hft_fix_msgs.c: Recieved Message :%d %s\n",__FILE__,__LINE__,msg_len, msg);
-			if(strstr(msg, "35=A"))
+			if(strstr((char*)msg, "35=A"))
 			{ 
 				FIX_op_hdl_private->logged_in=1; // success
 				console_log_write("%s:%d stn_hft_fix_msgc.c: Logged in successfully\n",__FILE__,__LINE__);
 				return iMsg;
 			}
-			else if(strstr(msg,"35=5"))
+			else if(strstr((char*)msg,"35=5"))
 			{
 				FIX_op_hdl_private->logged_in=5; // loged out messages
 				console_log_write("%s:%d stn_hft_fix_msgs.c: Received logout\n",__FILE__,__LINE__);
@@ -268,20 +269,20 @@ int __stn_hft_FIX_check_login_response(void* pax_hft_FIX_op_channel_handle)
 
 int stn_hft_FIX_op_channel_login_with_change_password(void* pax_hft_FIX_op_channel_handle)
 {
-     uint8_t login_msg [FIX_MSG_SIZE] = {0};
-     uint16_t msg_len = 0;
-	 int ret ;
-	 uint8_t new_password_len = 0;
-	 
+	
+    uint8_t login_msg [FIX_MSG_SIZE] = {0};
+    uint16_t msg_len = 0;
+	int ret ;
+
+    struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
 
 
-     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
-     FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length= strlen(FIX_op_hdl_private->session_constants.tag_91_encrpted_digest);
+    FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length= strlen((char*)FIX_op_hdl_private->session_constants.tag_91_encrpted_digest);
 	 
 	if(FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length >0)
 		{
-     msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-                         FIX_4_2_Login_Template_change_password, 
+     msg_len = snprintf ((char*)&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+                         (char*)FIX_4_2_Login_Template_change_password, 
                          0x01,
                          FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length,0x01,
                          FIX_op_hdl_private->session_constants.tag_91_encrpted_digest,0x01,
@@ -296,8 +297,8 @@ int stn_hft_FIX_op_channel_login_with_change_password(void* pax_hft_FIX_op_chann
 		}
 	else
 		{
-		msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-							 FIX_4_2_Login_Template_without_Tag90_change_password, 
+		msg_len = snprintf ((char*)&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+							 (char*)FIX_4_2_Login_Template_without_Tag90_change_password, 
 							 0x01,
 							 FIX_op_hdl_private->session_constants.tag_95_raw_data_length,0x01,
 							 FIX_op_hdl_private->session_constants.tag_96_raw_data,0x01,
@@ -343,8 +344,8 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 
 
      struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
-     FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length= strlen(FIX_op_hdl_private->session_constants.tag_91_encrpted_digest);
-	 new_password_len = strlen(FIX_op_hdl_private->session_constants.tag_925_newpassword);
+     FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length= strlen((char*)FIX_op_hdl_private->session_constants.tag_91_encrpted_digest);
+	 new_password_len = strlen((char*)FIX_op_hdl_private->session_constants.tag_925_newpassword);
 	 
 	 if(new_password_len > 0)
 		 {
@@ -354,8 +355,8 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 	 
 	if(FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length >0)
 		{
-     msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-                         FIX_4_2_Login_Template, 
+     msg_len = snprintf ((char*)&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+                         (char*)FIX_4_2_Login_Template, 
                          0x01,
                          FIX_op_hdl_private->session_constants.tag_90_encrptd_digest_length,0x01,
                          FIX_op_hdl_private->session_constants.tag_91_encrpted_digest,0x01,
@@ -369,8 +370,8 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 		}
 	else
 		{
-		msg_len = snprintf (&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-							 FIX_4_2_Login_Template_without_Tag90, 
+		msg_len = snprintf ((char*)&login_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+							 (char*)FIX_4_2_Login_Template_without_Tag90, 
 							 0x01,
 							 FIX_op_hdl_private->session_constants.tag_95_raw_data_length,0x01,
 							 FIX_op_hdl_private->session_constants.tag_96_raw_data,0x01,
@@ -407,10 +408,10 @@ int stn_hft_FIX_op_channel_login (void* pax_hft_FIX_op_channel_handle)
 */
 int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, struct FIX_OE_variables_s *p_FIX_op_new_order_crumbs)
 {
-    int8_t oe_msg [FIX_MSG_SIZE];
-    int8_t  custom_msg[100];
+    uint8_t oe_msg [FIX_MSG_SIZE];
+    uint8_t  custom_msg[100];
   //  uint16_t lcl_var_tag_9_message_length = 0, lcl_var_var_tag10_message_crc =0, msg_length =0;
-    uint16_t msg_len = 0; 
+    int msg_len = 0; 
 
     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
     char time_str[100];
@@ -423,7 +424,7 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
     // include terminal info with the strat id
     if(p_FIX_op_new_order_crumbs->tag_9366_strat_id != 0)
         {
-        snprintf(custom_msg,100,
+        snprintf((char*)custom_msg,100,
                             "9227=%s%c"
                             "9366=%02d%c"
                             "9367=%s%c",
@@ -433,19 +434,19 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
         }
     else
         {
-        snprintf(custom_msg,100,
+        snprintf((char*)custom_msg,100,
                             "9227=%s%c",
                             &FIX_op_hdl_private->session_constants.mcx_tag_9227_terminal_info[0], 0x01);
         }
 
 
     FormatCurrTime(time_str);
-    if(strlen(p_FIX_op_new_order_crumbs->tag_1_account) == 0 )
+    if(strlen((char*)p_FIX_op_new_order_crumbs->tag_1_account) == 0 )
         {
 
-        msg_len = snprintf (&oe_msg[FIX_MSG_OFFSET],
+        msg_len = snprintf ((char*)&oe_msg[FIX_MSG_OFFSET],
                          FIX_BUFF_SIZE,
-                         FIX_4_2_Order_Entry_Template,
+                         (char*)FIX_4_2_Order_Entry_Template,
                          p_FIX_op_new_order_crumbs->tag_21_floor_broker_instr,0x01,
                          p_FIX_op_new_order_crumbs->tag_11_client_order_id, 0x01,
                          p_FIX_op_new_order_crumbs->tag_38_order_qty, 0x01,
@@ -460,9 +461,9 @@ int stn_hft_FIX_op_channel_send_order_new (void* pax_hft_FIX_op_channel_handle, 
         }
     else
         {
-        msg_len = snprintf (&oe_msg[FIX_MSG_OFFSET],
+        msg_len = snprintf ((char*)&oe_msg[FIX_MSG_OFFSET],
                          FIX_BUFF_SIZE,
-                         FIX_4_2_Order_Entry_Template_with_Account,
+                         (char*)FIX_4_2_Order_Entry_Template_with_Account,
                          p_FIX_op_new_order_crumbs->tag_1_account,0x01,
                          p_FIX_op_new_order_crumbs->tag_21_floor_broker_instr,0x01,
                          p_FIX_op_new_order_crumbs->tag_11_client_order_id, 0x01,
@@ -498,7 +499,7 @@ int stn_hft_FIX_op_channel_send_order_replace (void* pax_hft_FIX_op_channel_hand
 {
     uint8_t or_msg [FIX_MSG_SIZE];
     uint16_t msg_len = 0;
-    struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
+ //   struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
     char time_str[100];
     char *pszStr = time_str;
     char custom_msg[100];
@@ -511,8 +512,8 @@ int stn_hft_FIX_op_channel_send_order_replace (void* pax_hft_FIX_op_channel_hand
   
     FormatCurrTime(time_str);
 
-    if(strlen(p_FIX_op_order_replace_crumbs->tag_60_message_creation_time)>0)
-        pszStr = p_FIX_op_order_replace_crumbs->tag_60_message_creation_time;
+    if(strlen((char*)p_FIX_op_order_replace_crumbs->tag_60_message_creation_time)>0)
+        pszStr = (char*)p_FIX_op_order_replace_crumbs->tag_60_message_creation_time;
 
     // include terminal info with the strat id
     if(p_FIX_op_order_replace_crumbs->tag_9366_strat_id != 0)
@@ -534,8 +535,8 @@ int stn_hft_FIX_op_channel_send_order_replace (void* pax_hft_FIX_op_channel_hand
 
         
 
-    msg_len = snprintf (&or_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-                                 FIX_4_2_Order_Replace_Template,
+    msg_len = snprintf ((char*)&or_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+                                 (char*)FIX_4_2_Order_Replace_Template,
                                  p_FIX_op_order_replace_crumbs->tag_11_client_order_id, 0x01,
                                  p_FIX_op_order_replace_crumbs->tag_21_floor_broker_instr, 0x01,
                                  p_FIX_op_order_replace_crumbs->tag_37_order_id,0x01,
@@ -560,7 +561,6 @@ int stn_hft_FIX_op_channel_send_order_cancel (void* pax_hft_FIX_op_channel_handl
 {
      uint8_t oc_msg [FIX_MSG_SIZE];
      uint16_t msg_len = 0;
-     struct _stn_hft_FIX_op_channel_handle_private_s *FIX_op_hdl_private = (struct _stn_hft_FIX_op_channel_handle_private_s *)pax_hft_FIX_op_channel_handle;
      char time_str[100];
      char *pszStr = time_str;
      char custom_msg[100];
@@ -568,8 +568,8 @@ int stn_hft_FIX_op_channel_send_order_cancel (void* pax_hft_FIX_op_channel_handl
      FormatCurrTime(time_str);
      
  
-     if(strlen(p_FIX_op_order_cancel_crumbs->tag_60_message_creation_time)>0)
-         pszStr = p_FIX_op_order_cancel_crumbs->tag_60_message_creation_time;
+     if(strlen((char*)p_FIX_op_order_cancel_crumbs->tag_60_message_creation_time)>0)
+         pszStr = (char*)p_FIX_op_order_cancel_crumbs->tag_60_message_creation_time;
 
      // include terminal info with the strat id
      if(p_FIX_op_order_cancel_crumbs->tag_9366_strat_id != 0)
@@ -590,8 +590,8 @@ int stn_hft_FIX_op_channel_send_order_cancel (void* pax_hft_FIX_op_channel_handl
          }
 
 
-     msg_len = snprintf (&oc_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
-                         FIX_4_2_Order_Cancel_Template,
+     msg_len = snprintf ((char*)&oc_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+                         (char*)FIX_4_2_Order_Cancel_Template,
                          p_FIX_op_order_cancel_crumbs->tag_11_client_order_id, 0x01,
                          p_FIX_op_order_cancel_crumbs->tag_37_order_id, 0x01,
                          p_FIX_op_order_cancel_crumbs->tag_41_orig_clor_id, 0x01,
@@ -610,21 +610,47 @@ int stn_hft_FIX_op_channel_send_order_cancel (void* pax_hft_FIX_op_channel_handl
 
 
 
-
+// send heart beat message
 int stn_hft_FIX_op_channel_send_hb(void* stn_hft_FIX_op_channel_handle)
 {
-	char hb_msg[FIX_MSG_SIZE];
+	uint8_t hb_msg[FIX_MSG_SIZE];
 	int msg_len;
 
 	char time_str[100];
-	char *pszStr = time_str;
 	
 	FormatCurrTime(time_str);
 
-	msg_len = snprintf(&hb_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,"112=FIXTEST%u",++g_hb_count);
+	msg_len = snprintf((char*)&hb_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,"112=FIXTEST%u%c",++g_hb_count,0x01);
 
 	
 	return stn_hft_FIX_op_send_generic_msg(stn_hft_FIX_op_channel_handle,FIX_HEARTBEAT_MSG_TYPE,&hb_msg[FIX_MSG_OFFSET],msg_len,time_str);
+
+}
+
+
+
+// send trading station request
+int stn_hft_FIX_op_channel_send_trading_status_request(void* stn_hft_FIX_op_channel_handle)
+{
+
+	uint8_t trading_status_req_msg[FIX_MSG_SIZE];
+	int msg_len;
+
+	char time_str[100];
+
+	FormatCurrTime(time_str);
+
+	msg_len = snprintf((char*)&trading_status_req_msg[FIX_MSG_OFFSET],FIX_BUFF_SIZE,
+
+							"335=FIXTEST%u%c" // TradSesReqId - tag 315 - not used by NSE
+							"6015=%d%c"  // NSE custom tag start of the sequence
+							"6001=%s%c", // NSE custom tag end of the sequence.
+							++g_hb_count,0x01,
+							0,0x01,
+							time_str,0x01);
+
+
+	return stn_hft_FIX_op_send_generic_msg(stn_hft_FIX_op_channel_handle,FIX_TRADING_STATUS_REQUEST_MSG_TYPE,&trading_status_req_msg[FIX_MSG_OFFSET],msg_len,time_str);
 
 }
 

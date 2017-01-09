@@ -37,12 +37,6 @@ mt			10/20/2016			Created
 // process fix login request for the fix operation testing with exchange
 int hft_client_fix_channel_process_login(void* chnl_hdl)
 {
-	uint8_t* msg;
-	int msg_len;
-	int iMsg = 0;
-
-	iMsg = stn_hft_FIX_op_channel_login (chnl_hdl);
-
-	return iMsg;
+	return stn_hft_FIX_op_channel_login (chnl_hdl);
 }
 
